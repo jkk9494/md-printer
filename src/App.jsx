@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Upload, Printer, FileText, Sun, Moon, Loader2, Type, Maximize, 
   Sparkles, Menu, ChevronLeft, LayoutPanelLeft, AlignJustify, 
-  Info, Settings2, Table2, Edit3, Eye, AlertCircle, CheckCircle2, Lightbulb
+  Info, Settings2, Table2, Edit3, Eye, AlertCircle, CheckCircle2, Lightbulb, ArrowUp
 } from 'lucide-react';
 
 const App = () => {
@@ -51,6 +51,70 @@ window.print();
   const [isEditMode, setIsEditMode] = useState(false);
   const [status, setStatus] = useState("loading");
   const fileInputRef = useRef(null);
+
+  const editorRef = useRef(null);
+  const previewRef = useRef(null);
+  const isSyncingLeft = useRef(false);
+  const isSyncingRight = useRef(false);
+
+  const insertPageBreak = () => {
+    if (editorRef.current) {
+      const start = editorRef.current.selectionStart;
+      const end = editorRef.current.selectionEnd;
+      const injection = '\n\n[[페이지 나누기]]\n\n';
+      const newMarkdown = markdown.substring(0, start) + injection + markdown.substring(end);
+      setMarkdown(newMarkdown);
+      
+      // 상태 업데이트 후 커서를 주입된 텍스트 뒤로 이동
+      setTimeout(() => {
+        if (editorRef.current) {
+          editorRef.current.focus();
+          editorRef.current.selectionStart = editorRef.current.selectionEnd = start + injection.length;
+        }
+      }, 0);
+    } else {
+      setMarkdown(prev => prev + '\n\n[[페이지 나누기]]\n\n');
+    }
+  };
+
+  const handleEditorScroll = (e) => {
+    if (!isEditMode || !previewRef.current) return;
+    if (isSyncingLeft.current) {
+      isSyncingLeft.current = false;
+      return;
+    }
+    const source = e.target;
+    const target = previewRef.current;
+    const percentage = source.scrollTop / (source.scrollHeight - source.clientHeight);
+    if (!isNaN(percentage)) {
+      isSyncingRight.current = true;
+      target.scrollTop = percentage * (target.scrollHeight - target.clientHeight);
+    }
+  };
+
+  const handlePreviewScroll = (e) => {
+    if (!isEditMode || !editorRef.current) return;
+    if (isSyncingRight.current) {
+      isSyncingRight.current = false;
+      return;
+    }
+    const source = e.target;
+    const target = editorRef.current;
+    const percentage = source.scrollTop / (source.scrollHeight - source.clientHeight);
+    if (!isNaN(percentage)) {
+      isSyncingLeft.current = true;
+      target.scrollTop = percentage * (target.scrollHeight - target.clientHeight);
+    }
+  };
+
+  const scrollToTop = () => {
+    if (previewRef.current) {
+      previewRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    if (isEditMode && editorRef.current) {
+      editorRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   // marked 라이브러리 로드
   useEffect(() => {
@@ -252,23 +316,29 @@ window.print();
                 <span className="text-sm font-bold uppercase tracking-widest">문서 편집기</span>
               </div>
               <button 
-                onClick={() => setMarkdown(prev => prev + '\n\n[[페이지 나누기]]\n')}
+                onClick={insertPageBreak}
                 className={`text-xs font-bold px-3 py-2 rounded-lg transition-colors flex items-center gap-1 ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-[#f2f4f6] hover:bg-[#e5e8eb] text-slate-600'}`}
               >
                 ✂️ 페이지 나누기 삽입
               </button>
             </div>
             <textarea 
+              ref={editorRef}
               value={markdown}
+              onScroll={handleEditorScroll}
               onChange={(e) => setMarkdown(e.target.value)}
-              className={`flex-1 w-full p-8 rounded-3xl resize-none outline-none font-mono text-sm leading-relaxed transition-colors ${isDarkMode ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-slate-50 text-slate-700 border-transparent focus:bg-white focus:border-blue-100 border-2'}`}
+              className={`flex-1 w-full p-8 rounded-3xl resize-none outline-none font-mono text-sm leading-relaxed transition-colors custom-scrollbar ${isDarkMode ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-slate-50 text-slate-700 border-transparent focus:bg-white focus:border-blue-100 border-2'}`}
               placeholder="마크다운 내용을 입력하십시오..."
             />
           </div>
         )}
 
         {/* Preview Area */}
-        <div className={`flex-1 p-12 overflow-auto flex flex-col items-center bg-transparent print:m-0 print:p-0 print:block ${isEditMode ? 'max-h-screen' : ''}`}>
+        <div 
+          ref={previewRef}
+          onScroll={handlePreviewScroll}
+          className={`flex-1 p-12 overflow-y-auto flex flex-col items-center bg-transparent print:m-0 print:p-0 print:block h-screen print:h-auto print:overflow-visible custom-scrollbar`}
+        >
           <style>
             {`
               @media print {
@@ -418,6 +488,14 @@ window.print();
           </div>
         </div>
       </main>
+
+      {/* Scroll to Top FAB */}
+      <button
+        onClick={scrollToTop}
+        className={`fixed bottom-8 right-8 z-[100] w-14 h-14 rounded-full shadow-2xl hover:scale-110 hover:-translate-y-1 transition-all flex items-center justify-center print:hidden ${isDarkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-[#3182f6] text-white hover:bg-[#1b64da] shadow-blue-500/30'}`}
+      >
+        <ArrowUp className="w-6 h-6" />
+      </button>
     </div>
   );
 };
