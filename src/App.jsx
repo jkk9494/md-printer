@@ -212,6 +212,31 @@ window.print();
     reader.readAsText(file);
   };
 
+  // 문서 제목 추출 (첫 번째 줄 기준, # 제거, 50자 제한)
+  const getDocumentTitle = (text) => {
+    const lines = text.split('\n');
+    const firstLine = lines.find(line => line.trim() !== '');
+    if (!firstLine) return 'md-printer';
+    
+    // # 기호 제거 및 앞뒤 공백 제거
+    let title = firstLine.replace(/^#+\s*/, '').trim();
+    
+    // 글자수 제한 (50자)
+    if (title.length > 50) {
+      title = title.substring(0, 50);
+    }
+    
+    // 파일명으로 사용할 수 없는 특수문자 제거
+    title = title.replace(/[\\/:*?"<>|]/g, '_');
+    
+    return title || 'md-printer';
+  };
+
+  // 마크다운 변경 시 문서 타이틀(브라우저 탭 및 인쇄 파일명) 업데이트
+  useEffect(() => {
+    document.title = getDocumentTitle(markdown);
+  }, [markdown]);
+
   // 한 페이지짜리 긴 PDF로 내보내기 (html2canvas + jsPDF)
   const handleExportSinglePagePDF = async () => {
     if (isExporting) return;
@@ -270,7 +295,8 @@ window.print();
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
       
       setExportProgress(90);
-      pdf.save(`MD_Printer_${new Date().getTime()}.pdf`);
+      const fileName = getDocumentTitle(markdown);
+      pdf.save(`${fileName}.pdf`);
       
     } catch (error) {
       console.error("PDF Export Error:", error);
