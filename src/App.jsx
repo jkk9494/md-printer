@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Upload, Printer, FileText, Sun, Moon, Loader2, Type, Maximize, 
-  Sparkles, Menu, ChevronLeft, LayoutPanelLeft, AlignJustify, 
+import {
+  Upload, Printer, FileText, Sun, Moon, Loader2, Type, Maximize,
+  Sparkles, Menu, ChevronLeft, LayoutPanelLeft, AlignJustify,
   Info, Settings2, Table2, Edit3, Eye, AlertCircle, CheckCircle2, Lightbulb, ArrowUp,
   HelpCircle, X, Plus, Minus, Download
 } from 'lucide-react';
@@ -62,7 +62,7 @@ window.print();
 \`\`\``);
 
   const [htmlPages, setHtmlPages] = useState([""]);
-  const [padding, setPadding] = useState(11); 
+  const [padding, setPadding] = useState(11);
   const [fontSize, setFontSize] = useState(13);
   const [tableFontSize, setTableFontSize] = useState(13);
   const [tableLayout, setTableLayout] = useState("auto");
@@ -71,7 +71,7 @@ window.print();
   const [firstColNowrap, setFirstColNowrap] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const isPageMode = markdown.includes('[[페이지 나누기]]'); 
+  const isPageMode = markdown.includes('[[페이지 나누기]]');
 
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -92,11 +92,11 @@ window.print();
       const start = editorRef.current.selectionStart;
       const end = editorRef.current.selectionEnd;
       const currentScrollTop = editorRef.current.scrollTop;
-      
+
       const injection = '\n\n[[페이지 나누기]]\n\n';
       const newMarkdown = markdown.substring(0, start) + injection + markdown.substring(end);
       setMarkdown(newMarkdown);
-      
+
       // 상태 업데이트 후 커서 및 스크롤 위치 복원
       setTimeout(() => {
         if (editorRef.current) {
@@ -174,19 +174,19 @@ window.print();
       try {
         let content = marked.parse(markdown);
 
-        
+
         // [!TYPE] 문법 파싱 로직 (GitHub/Obsidian 공용 지원)
         content = content.replace(/<blockquote>\s*<p>\[!(\w+)\]/gi, (match, type) => {
           const lowerType = type.toLowerCase();
           return `<blockquote class="callout-${lowerType}">`;
         });
-        
+
         // 기존 한국어 스타일 호환성 유지
         content = content.replace(/<blockquote>\s*<p><strong>안내<\/strong>/g, '<blockquote class="callout-info"><p><strong>안내</strong>');
         content = content.replace(/<blockquote>\s*<p><strong>주의<\/strong>/g, '<blockquote class="callout-warning"><p><strong>주의</strong>');
         content = content.replace(/<blockquote>\s*<p><strong>경고<\/strong>/g, '<blockquote class="callout-danger"><p><strong>경고</strong>');
         content = content.replace(/<blockquote>\s*<p><strong>팁<\/strong>/g, '<blockquote class="callout-success"><p><strong>팁</strong>');
-        
+
         if (isPageMode) {
           // 페이지별 모드: 페이지 나누기 텍스트를 기준으로 HTML을 배열로 나눔
           const pages = content.split(/<p>\s*\[\[페이지 나누기\]\]\s*<\/p>\n?/g);
@@ -217,18 +217,18 @@ window.print();
     const lines = text.split('\n');
     const firstLine = lines.find(line => line.trim() !== '');
     if (!firstLine) return 'md-printer';
-    
+
     // # 기호 제거 및 앞뒤 공백 제거
     let title = firstLine.replace(/^#+\s*/, '').trim();
-    
+
     // 글자수 제한 (50자)
     if (title.length > 50) {
       title = title.substring(0, 50);
     }
-    
+
     // 파일명으로 사용할 수 없는 특수문자 제거
     title = title.replace(/[\\/:*?"<>|]/g, '_');
-    
+
     return title || 'md-printer';
   };
 
@@ -240,7 +240,7 @@ window.print();
   // 한 페이지짜리 긴 PDF로 내보내기 (html2canvas + jsPDF)
   const handleExportSinglePagePDF = async () => {
     if (isExporting) return;
-    
+
     setIsExporting(true);
     setExportProgress(10);
 
@@ -292,7 +292,7 @@ window.print();
                 fakeBox.style.verticalAlign = '-0.15em'; // middle 대신 baseline 대비 상대 수치로 변경하여 주변 텍스트 줄높이 파괴 방지
                 fakeBox.style.marginRight = '0.5em';
                 fakeBox.style.marginLeft = '-1.5em';
-                
+
                 if (isChecked) {
                   fakeBox.style.backgroundColor = '#3182f6';
                   fakeBox.style.border = 'none';
@@ -301,7 +301,7 @@ window.print();
                   fakeBox.style.backgroundColor = 'white';
                   fakeBox.style.border = '1px solid #cbd5e1';
                 }
-                
+
                 if (el.parentNode) {
                   el.parentNode.replaceChild(fakeBox, el);
                 }
@@ -314,11 +314,11 @@ window.print();
       setExportProgress(60);
 
       const imgData = canvas.toDataURL('image/png');
-      
+
       // PDF 생성
       const imgWidth = 210; // A4 가로 (mm)
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
+
       // 이미지 높이에 맞춘 커스텀 사이즈 PDF 생성
       const pdf = new jsPDF({
         orientation: 'p',
@@ -327,11 +327,11 @@ window.print();
       });
 
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
-      
+
       setExportProgress(90);
       const fileName = getDocumentTitle(markdown);
       pdf.save(`${fileName}.pdf`);
-      
+
     } catch (error) {
       console.error("PDF Export Error:", error);
       alert("PDF 생성 중 오류가 발생했습니다.");
@@ -377,31 +377,29 @@ window.print();
 
   return (
     <div className={`min-h-screen flex transition-colors duration-500 print:bg-white print:block print:min-h-0 ${isDarkMode ? 'bg-[#0f172a]' : 'bg-[#f2f4f6]'}`}>
-      
+
       {/* Sidebar Toggle Button */}
-      <button 
+      <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`fixed top-6 right-8 z-[100] p-3 rounded-2xl shadow-xl transition-all print:hidden ${
-          isSidebarOpen 
-            ? 'bg-white border border-slate-200 text-slate-500 hover:text-[#3182f6] hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400' 
+        className={`fixed top-6 right-8 z-[100] p-3 rounded-2xl shadow-xl transition-all print:hidden ${isSidebarOpen
+            ? 'bg-white border border-slate-200 text-slate-500 hover:text-[#3182f6] hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'
             : 'bg-[#3182f6] text-white hover:bg-[#1b64da] shadow-blue-500/20'
-        }`}
+          }`}
       >
         <LayoutPanelLeft className="w-5 h-5" />
       </button>
 
       {/* Sidebar */}
-      <aside 
-        className={`w-80 border-r p-6 fixed h-full z-40 flex flex-col shadow-2xl transition-transform duration-500 ease-in-out ${
-          isDarkMode ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-200'
-        } ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} print:hidden`}
+      <aside
+        className={`w-80 border-r p-6 fixed h-full z-40 flex flex-col shadow-2xl transition-transform duration-500 ease-in-out ${isDarkMode ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-200'
+          } ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} print:hidden`}
       >
         <div className="flex items-center gap-3 mb-6 pl-2">
           <div className="bg-[#3182f6] p-2 rounded-xl">
             <Sparkles className="text-white w-5 h-5" />
           </div>
           <h1 className={`text-xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-[#191f28]'}`}>MD 프린터</h1>
-          <button 
+          <button
             onClick={() => setIsHelpModalOpen(true)}
             className={`ml-auto p-2 rounded-xl flex items-center justify-center transition-colors group relative ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-slate-200' : 'hover:bg-slate-100 text-slate-400 hover:text-[#3182f6]'}`}
             title="사용방법"
@@ -425,7 +423,7 @@ window.print();
             <label className="text-xs font-bold text-[#3182f6] uppercase tracking-widest flex items-center gap-2 mb-1">
               <Settings2 className="w-4 h-4" /> 비율 설정
             </label>
-            
+
             <div>
               <div className="flex justify-between mb-2">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">페이지 여백</label>
@@ -443,20 +441,20 @@ window.print();
             </div>
           </section>
 
-           {/* Group 2: 마크다운 스타일 */}
+          {/* Group 2: 마크다운 스타일 */}
           <section className={`p-4 rounded-[20px] space-y-4 ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
             <label className="text-xs font-bold text-[#3182f6] uppercase tracking-widest flex items-center gap-2 mb-1">
               <FileText className="w-4 h-4" /> 문서 스타일
             </label>
             <div className="grid grid-cols-2 gap-1 bg-[#e5e8eb] dark:bg-slate-700 p-1 rounded-xl">
-              <button 
-                onClick={() => setMarkdownStyle('github')} 
+              <button
+                onClick={() => setMarkdownStyle('github')}
                 className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${markdownStyle === 'github' ? 'bg-white shadow-sm text-[#3182f6]' : 'text-slate-500'}`}
               >
                 GitHub
               </button>
-              <button 
-                onClick={() => setMarkdownStyle('obsidian')} 
+              <button
+                onClick={() => setMarkdownStyle('obsidian')}
                 className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${markdownStyle === 'obsidian' ? 'bg-white shadow-sm text-[#3182f6]' : 'text-slate-500'}`}
               >
                 Obsidian
@@ -507,26 +505,26 @@ window.print();
         <div className="mt-auto pt-6 border-t border-slate-100 dark:border-slate-700 space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <button onClick={() => setIsEditMode(!isEditMode)} className={`py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${isEditMode ? 'bg-[#3182f6] text-white' : isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-white border border-slate-200 text-slate-600'}`}>
-              {isEditMode ? <Eye className="w-4 h-4"/> : <Edit3 className="w-4 h-4"/>}
+              {isEditMode ? <Eye className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
               {isEditMode ? '미리보기' : '편집 모드'}
             </button>
             <button onClick={() => setIsDarkMode(!isDarkMode)} className={`py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${isDarkMode ? 'bg-slate-700 text-yellow-400' : 'bg-[#f2f4f6] text-[#4e5968]'}`}>
-              {isDarkMode ? <Sun className="w-4 h-4"/> : <Moon className="w-4 h-4"/>}
+              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               테마
             </button>
           </div>
           <div className="grid grid-cols-1 gap-2 mt-4">
-            <button 
-              onClick={handlePDFSave} 
+            <button
+              onClick={handlePDFSave}
               disabled={isExporting}
               className={`w-full py-4 rounded-[20px] text-sm font-bold shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95 ${isExporting ? 'bg-slate-400 cursor-not-allowed text-white' : 'bg-[#3182f6] text-white hover:bg-[#1b64da] shadow-blue-500/10'}`}
             >
               {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
               PDF 저장
             </button>
-            <button 
-              onClick={handlePrint} 
-              disabled={status !== "ready" || isExporting} 
+            <button
+              onClick={handlePrint}
+              disabled={status !== "ready" || isExporting}
               className={`w-full py-3 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-[20px] text-sm font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50`}
             >
               <Printer className="w-4 h-4" />
@@ -541,7 +539,7 @@ window.print();
 
       {/* Main Container */}
       <main className={`flex-1 flex flex-col lg:flex-row transition-all duration-500 ease-in-out ${isSidebarOpen ? 'ml-80' : 'ml-0'} print:m-0 print:p-0 print:block`}>
-        
+
         {/* Editor Area */}
         {isEditMode && (
           <div className="flex-1 h-screen p-8 bg-white dark:bg-[#191f28] border-r border-slate-100 dark:border-slate-800 flex flex-col print:hidden">
@@ -550,14 +548,14 @@ window.print();
                 <Edit3 className="w-5 h-5" />
                 <span className="text-sm font-bold uppercase tracking-widest">문서 편집기</span>
               </div>
-              <button 
+              <button
                 onClick={insertPageBreak}
                 className={`text-xs font-bold px-3 py-2 rounded-lg transition-colors flex items-center gap-1 ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-[#f2f4f6] hover:bg-[#e5e8eb] text-slate-600'}`}
               >
                 ✂️ 페이지 나누기 삽입
               </button>
             </div>
-            <textarea 
+            <textarea
               ref={editorRef}
               value={markdown}
               onScroll={handleEditorScroll}
@@ -569,7 +567,7 @@ window.print();
         )}
 
         {/* Preview Area */}
-        <div 
+        <div
           ref={previewRef}
           onScroll={handlePreviewScroll}
           className={`flex-1 p-12 overflow-y-auto flex flex-col items-center bg-transparent print:m-0 print:p-0 print:block h-screen print:h-auto print:overflow-visible custom-scrollbar`}
@@ -647,14 +645,19 @@ window.print();
               .prose ol { list-style-type: decimal; }
               .prose li > ul, .prose li > ol { margin-top: 0.5em; margin-bottom: 0; }
               .prose input[type="checkbox"] { 
-                width: 1.1em; 
-                height: 1.1em; 
-                margin-right: 0.5em; 
-                margin-left: -1.5em; 
-                vertical-align: -0.15em; 
-                accent-color: #3182f6; 
+                  width: 1.2em; 
+                  height: 1.2em; 
+                  margin: 0;                /* 기존 마진 제거 */
+                  flex-shrink: 0;           /* 크기 고정 */
+                  accent-color: #3182f6; 
+                  cursor: pointer;
               }
-              .prose li:has(input[type="checkbox"]) { list-style-type: none; }
+              .prose li:has(input[type="checkbox"]) { 
+                  list-style-type: none; 
+                  display: flex;            /* 플렉스 박스로 변경 */
+                  align-items: center;      /* 수직 중앙 정렬 */
+                  gap: 8px;                 /* 간격 조절 */
+              }
 
               .prose table { 
                 width: 100% !important;
@@ -668,13 +671,13 @@ window.print();
                 font-size: ${tableFontSize}px !important;
               }
               .prose th, .prose td { 
-                padding: 12px 18px 14px; /* 위는 12px, 아래는 14px로 주어 텍스트가 쳐져보이는 착시와 html2canvas 렌더링 한계를 보정 */
-                text-align: left; 
-                vertical-align: middle;
-                line-height: 1.5;
-                font-weight: 500;
-                border-bottom: 1px solid ${isDarkMode ? '#334155' : '#f2f4f6'};
-                word-break: break-all;
+                  padding: 14px 18px; /* 위아래 패딩을 동일하게 맞춤 */
+                  text-align: left; 
+                  vertical-align: middle; /* 이게 핵심 */
+                  line-height: 1.6; /* 텍스트 높이를 명확히 지정 */
+                  font-weight: 500;
+                  border-bottom: 1px solid ${isDarkMode ? '#334155' : '#f2f4f6'};
+                  word-break: break-all;
               }
               .prose th { background: ${isDarkMode ? '#1e293b' : '#fafafa'}; font-weight: 700; color: ${isDarkMode ? '#cbd5e1' : '#4e5968'}; border-bottom: 2px solid ${isDarkMode ? '#334155' : '#f2f4f6'}; }
               .prose tr td:first-child {
@@ -738,15 +741,16 @@ window.print();
               .prose blockquote strong { color: inherit; display: inline; margin-bottom: 0; }
 
               .prose :not(pre) > code { 
-                background: ${isDarkMode ? '#1e293b' : '#f2f4f6'}; 
-                padding: 0.1em 0.4em 0.2em; /* 패딩을 약간 비대칭으로 주어 텍스트 중심선 정렬 유지 */
-                border-radius: 6px; 
-                font-family: monospace; 
-                font-size: 0.85em; 
-                color: #3182f6; 
-                font-weight: 600; 
-                word-break: break-word;
-                vertical-align: baseline;
+                  background: ${isDarkMode ? '#1e293b' : '#f2f4f6'}; 
+                  padding: 2px 5px;         /* 상하 패딩을 동일하게 */
+                  border-radius: 6px; 
+                  font-family: monospace; 
+                  font-size: 0.9em; 
+                  color: #3182f6; 
+                  font-weight: 600; 
+                  vertical-align: middle;   /* 텍스트와 라인을 맞춤 */
+                  position: relative;
+                  top: -1px;                /* 시각적으로 미세하게 위로 보정 */
               }
               .prose pre { 
                 background: #191f28 !important; 
@@ -769,15 +773,15 @@ window.print();
             `}
           </style>
 
-          <div 
+          <div
             id="capture-area"
-            className={`w-full flex flex-col items-center print:gap-0 print:block print:w-full print:bg-white ${isPageMode ? 'gap-12' : 'gap-0'}`} 
+            className={`w-full flex flex-col items-center print:gap-0 print:block print:w-full print:bg-white ${isPageMode ? 'gap-12' : 'gap-0'}`}
             style={{ zoom: `${zoom}%` }}
           >
             {htmlPages.map((pageHtml, index) => (
-              <div 
+              <div
                 key={index}
-                className={`paper-preview transition-all duration-500 origin-top border relative ${isPageMode ? 'shadow-2xl' : 'shadow-none'}`} 
+                className={`paper-preview transition-all duration-500 origin-top border relative ${isPageMode ? 'shadow-2xl' : 'shadow-none'}`}
                 style={{
                   ...getPaperStyle(),
                   borderColor: isDarkMode ? '#334155' : '#f2f4f6',
@@ -848,7 +852,7 @@ window.print();
                 </div>
                 사용 방법 안내
               </h2>
-              <button 
+              <button
                 onClick={() => setIsHelpModalOpen(false)}
                 className={`p-2 rounded-xl transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-[#191f28]'}`}
               >
@@ -856,7 +860,7 @@ window.print();
               </button>
             </div>
             <div className={`p-6 overflow-y-auto max-h-[70vh] space-y-6 flex-1 custom-scrollbar ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
-              
+
               <section className="space-y-3">
                 <h3 className={`font-bold text-base flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
                   <span className="bg-[#3182f6] text-white w-5 h-5 rounded-full inline-flex justify-center items-center text-xs">1</span>
@@ -875,7 +879,7 @@ window.print();
                 </h3>
                 <div className={`p-4 rounded-[16px] leading-relaxed text-sm border-l-4 border-yellow-400 ${isDarkMode ? 'bg-yellow-950/20' : 'bg-yellow-50/80'}`}>
                   <p className="flex items-start gap-2">
-                    <span className="text-xl">⚠️</span> 
+                    <span className="text-xl">⚠️</span>
                     <strong className="text-yellow-700 dark:text-yellow-500 font-bold">인쇄 버튼을 눌렀을 때 페이지가 잘리거나 여백이 이상한가요?</strong>
                   </p>
                   <ul className="mt-4 space-y-2 text-slate-600 dark:text-slate-300">
@@ -911,7 +915,7 @@ window.print();
 
             </div>
             <div className={`px-6 py-4 border-t flex justify-end ${isDarkMode ? 'border-slate-700 bg-slate-800/50' : 'border-slate-100 bg-slate-50/50'}`}>
-              <button 
+              <button
                 onClick={() => setIsHelpModalOpen(false)}
                 className="px-6 py-2.5 bg-[#3182f6] text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-[#1b64da] transition-all active:scale-95"
               >
