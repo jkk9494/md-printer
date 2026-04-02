@@ -286,14 +286,12 @@ window.print();
                 const isChecked = el.checked;
                 const fakeBox = clonedDoc.createElement('span');
                 fakeBox.style.display = 'inline-block';
-                fakeBox.style.width = '1.2em';
-                fakeBox.style.height = '1.2em';
+                fakeBox.style.width = '1.1em';
+                fakeBox.style.height = '1.1em';
                 fakeBox.style.borderRadius = '3px';
-                fakeBox.style.verticalAlign = 'middle';
+                fakeBox.style.verticalAlign = '-0.15em'; // middle 대신 baseline 대비 상대 수치로 변경하여 주변 텍스트 줄높이 파괴 방지
                 fakeBox.style.marginRight = '0.5em';
                 fakeBox.style.marginLeft = '-1.5em';
-                fakeBox.style.position = 'relative';
-                fakeBox.style.top = '-1px';
                 
                 if (isChecked) {
                   fakeBox.style.backgroundColor = '#3182f6';
@@ -301,7 +299,7 @@ window.print();
                   fakeBox.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="width: 100%; height: 100%; padding: 2px; box-sizing: border-box;"><polyline points="20 6 9 17 4 12"></polyline></svg>';
                 } else {
                   fakeBox.style.backgroundColor = 'white';
-                  fakeBox.style.border = '1.5px solid #cbd5e1';
+                  fakeBox.style.border = '1px solid #cbd5e1';
                 }
                 
                 if (el.parentNode) {
@@ -649,13 +647,11 @@ window.print();
               .prose ol { list-style-type: decimal; }
               .prose li > ul, .prose li > ol { margin-top: 0.5em; margin-bottom: 0; }
               .prose input[type="checkbox"] { 
-                width: 1.2em; 
-                height: 1.2em; 
+                width: 1.1em; 
+                height: 1.1em; 
                 margin-right: 0.5em; 
                 margin-left: -1.5em; 
-                vertical-align: middle; 
-                position: relative;
-                top: -1px;
+                vertical-align: -0.15em; 
                 accent-color: #3182f6; 
               }
               .prose li:has(input[type="checkbox"]) { list-style-type: none; }
@@ -672,8 +668,11 @@ window.print();
                 font-size: ${tableFontSize}px !important;
               }
               .prose th, .prose td { 
-                padding: 14px 18px; 
+                padding: 12px 18px 14px; /* 위는 12px, 아래는 14px로 주어 텍스트가 쳐져보이는 착시와 html2canvas 렌더링 한계를 보정 */
                 text-align: left; 
+                vertical-align: middle;
+                line-height: 1.5;
+                font-weight: 500;
                 border-bottom: 1px solid ${isDarkMode ? '#334155' : '#f2f4f6'};
                 word-break: break-all;
               }
@@ -740,13 +739,14 @@ window.print();
 
               .prose :not(pre) > code { 
                 background: ${isDarkMode ? '#1e293b' : '#f2f4f6'}; 
-                padding: 0.2em 0.4em; 
+                padding: 0.1em 0.4em 0.2em; /* 패딩을 약간 비대칭으로 주어 텍스트 중심선 정렬 유지 */
                 border-radius: 6px; 
                 font-family: monospace; 
                 font-size: 0.85em; 
                 color: #3182f6; 
                 font-weight: 600; 
                 word-break: break-word;
+                vertical-align: baseline;
               }
               .prose pre { 
                 background: #191f28 !important; 
