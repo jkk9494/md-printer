@@ -3,7 +3,7 @@ import {
   Upload, Printer, FileText, Sun, Moon, Loader2, Type, Maximize, 
   Sparkles, Menu, ChevronLeft, LayoutPanelLeft, AlignJustify, 
   Info, Settings2, Table2, Edit3, Eye, AlertCircle, CheckCircle2, Lightbulb, ArrowUp,
-  HelpCircle, X
+  HelpCircle, X, Plus, Minus
 } from 'lucide-react';
 
 const App = () => {
@@ -42,10 +42,11 @@ window.print();
 \`\`\``);
 
   const [htmlPages, setHtmlPages] = useState([""]);
-  const [padding, setPadding] = useState(25); 
-  const [fontSize, setFontSize] = useState(16);
-  const [tableFontSize, setTableFontSize] = useState(14);
+  const [padding, setPadding] = useState(11); 
+  const [fontSize, setFontSize] = useState(13);
+  const [tableFontSize, setTableFontSize] = useState(13);
   const [tableLayout, setTableLayout] = useState("auto");
+  const [zoom, setZoom] = useState(100);
   const [firstColNowrap, setFirstColNowrap] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -254,7 +255,7 @@ window.print();
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">전체 글자 크기</label>
                 <span className="text-[#3182f6] font-bold text-xs">{fontSize}px</span>
               </div>
-              <input type="range" min="12" max="24" value={fontSize} onChange={(e) => setFontSize(parseInt(e.target.value))} className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-[#3182f6]" />
+              <input type="range" min="10" max="24" value={fontSize} onChange={(e) => setFontSize(parseInt(e.target.value))} className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-[#3182f6]" />
             </div>
           </section>
 
@@ -480,7 +481,7 @@ window.print();
             `}
           </style>
 
-          <div className="w-full flex flex-col items-center gap-12 print:gap-0 print:block print:w-full print:bg-white">
+          <div className="w-full flex flex-col items-center gap-12 print:gap-0 print:block print:w-full print:bg-white" style={{ zoom: `${zoom}%` }}>
             {htmlPages.map((pageHtml, index) => (
               <div 
                 key={index}
@@ -502,13 +503,31 @@ window.print();
         </div>
       </main>
 
-      {/* Scroll to Top FAB */}
-      <button
-        onClick={scrollToTop}
-        className={`fixed bottom-8 right-8 z-[100] w-14 h-14 rounded-full shadow-2xl hover:scale-110 hover:-translate-y-1 transition-all flex items-center justify-center print:hidden ${isDarkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-[#3182f6] text-white hover:bg-[#1b64da] shadow-blue-500/30'}`}
-      >
-        <ArrowUp className="w-6 h-6" />
-      </button>
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-8 right-8 z-[100] flex flex-col items-center gap-4 print:hidden">
+        {/* Zoom Controls */}
+        {!isEditMode && (
+          <div className={`flex flex-col items-center p-1.5 rounded-full shadow-xl backdrop-blur-md ${isDarkMode ? 'bg-slate-800/90 border border-slate-700' : 'bg-white/90 border border-slate-200'}`}>
+            <button onClick={() => setZoom(p => Math.min(p + 10, 200))} className={`p-2.5 rounded-full transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-100 text-[#3182f6]'}`} title="확대">
+              <Plus className="w-5 h-5" />
+            </button>
+            <button onClick={() => setZoom(100)} className={`py-1 text-[11px] font-bold w-full text-center transition-colors ${isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-[#3182f6]'}`} title="기본 크기로">
+              {zoom}%
+            </button>
+            <button onClick={() => setZoom(p => Math.max(p - 10, 30))} className={`p-2.5 rounded-full transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-100 text-[#3182f6]'}`} title="축소">
+              <Minus className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
+        {/* Scroll to Top FAB */}
+        <button
+          onClick={scrollToTop}
+          className={`w-14 h-14 rounded-full shadow-2xl hover:scale-110 hover:-translate-y-1 transition-all flex items-center justify-center ${isDarkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-[#3182f6] text-white hover:bg-[#1b64da] shadow-blue-500/30'}`}
+        >
+          <ArrowUp className="w-6 h-6" />
+        </button>
+      </div>
 
       {/* Help Modal */}
       {isHelpModalOpen && (
