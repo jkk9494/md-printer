@@ -69,6 +69,7 @@ window.print();
   const [zoom, setZoom] = useState(100);
   const [markdownStyle, setMarkdownStyle] = useState('github'); // 'github' | 'obsidian'
   const [firstColNowrap, setFirstColNowrap] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const isPageMode = markdown.includes('[[페이지 나누기]]'); 
 
