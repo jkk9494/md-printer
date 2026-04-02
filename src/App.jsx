@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Upload, Printer, FileText, Sun, Moon, Loader2, Type, Maximize, 
   Sparkles, Menu, ChevronLeft, LayoutPanelLeft, AlignJustify, 
-  Info, Settings2, Table2, Edit3, Eye, AlertCircle, CheckCircle2, Lightbulb, ArrowUp
+  Info, Settings2, Table2, Edit3, Eye, AlertCircle, CheckCircle2, Lightbulb, ArrowUp,
+  HelpCircle, X
 } from 'lucide-react';
 
 const App = () => {
@@ -49,6 +50,7 @@ window.print();
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [status, setStatus] = useState("loading");
   const fileInputRef = useRef(null);
 
@@ -214,6 +216,13 @@ window.print();
             <Sparkles className="text-white w-5 h-5" />
           </div>
           <h1 className={`text-xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-[#191f28]'}`}>MD 프린터</h1>
+          <button 
+            onClick={() => setIsHelpModalOpen(true)}
+            className={`ml-auto p-2 rounded-xl flex items-center justify-center transition-colors group relative ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-slate-200' : 'hover:bg-slate-100 text-slate-400 hover:text-[#3182f6]'}`}
+            title="사용방법"
+          >
+            <HelpCircle className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="space-y-5 flex-1 overflow-y-auto pr-2 custom-scrollbar">
@@ -500,6 +509,91 @@ window.print();
       >
         <ArrowUp className="w-6 h-6" />
       </button>
+
+      {/* Help Modal */}
+      {isHelpModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm print:hidden" onClick={() => setIsHelpModalOpen(false)}>
+          <div className={`w-full max-w-lg rounded-[24px] shadow-2xl overflow-hidden flex flex-col transform transition-all ${isDarkMode ? 'bg-[#1e293b] border border-slate-700' : 'bg-white'}`} onClick={e => e.stopPropagation()}>
+            <div className={`px-6 py-5 border-b flex justify-between items-center ${isDarkMode ? 'border-slate-700' : 'border-slate-100'}`}>
+              <h2 className={`text-lg font-bold flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-[#191f28]'}`}>
+                <div className="bg-blue-100 dark:bg-blue-900/50 p-1.5 rounded-lg">
+                  <HelpCircle className="w-5 h-5 text-[#3182f6]" />
+                </div>
+                사용 방법 안내
+              </h2>
+              <button 
+                onClick={() => setIsHelpModalOpen(false)}
+                className={`p-2 rounded-xl transition-colors ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-white' : 'hover:bg-slate-100 text-slate-400 hover:text-[#191f28]'}`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className={`p-6 overflow-y-auto max-h-[70vh] space-y-6 flex-1 custom-scrollbar ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+              
+              <section className="space-y-3">
+                <h3 className={`font-bold text-base flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                  <span className="bg-[#3182f6] text-white w-5 h-5 rounded-full inline-flex justify-center items-center text-xs">1</span>
+                  페이지 나누기 사용법
+                </h3>
+                <div className={`p-4 rounded-[16px] leading-relaxed text-sm ${isDarkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-[#f2f4f6]'}`}>
+                  <p>편집기 우측 상단의 <strong className="text-[#3182f6] px-1 bg-white dark:bg-slate-700 rounded shadow-sm">✂️ 페이지 나누기 삽입</strong> 버튼을 누르면 커서 위치에 <code className="bg-slate-200 dark:bg-[#0f172a] px-1.5 py-0.5 rounded text-sm text-[#3182f6] dark:text-blue-400 font-mono">[[페이지 나누기]]</code> 텍스트가 들어갑니다.</p>
+                  <p className="mt-3 text-slate-500 dark:text-slate-400 pt-3 border-t border-slate-200 dark:border-slate-700">이 텍스트를 기준으로 인쇄 및 PDF 저장 시 <strong>새로운 페이지</strong>로 나뉘어 깔끔하게 출력됩니다.</p>
+                </div>
+              </section>
+
+              <section className="space-y-3">
+                <h3 className={`font-bold text-base flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                  <span className="bg-[#3182f6] text-white w-5 h-5 rounded-full inline-flex justify-center items-center text-xs">2</span>
+                  출력 인쇄 오류 해결 방법 <span className="text-[10px] ml-1 bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-400 px-2 py-0.5 rounded-full">중요</span>
+                </h3>
+                <div className={`p-4 rounded-[16px] leading-relaxed text-sm border-l-4 border-yellow-400 ${isDarkMode ? 'bg-yellow-950/20' : 'bg-yellow-50/80'}`}>
+                  <p className="flex items-start gap-2">
+                    <span className="text-xl">⚠️</span> 
+                    <strong className="text-yellow-700 dark:text-yellow-500 font-bold">인쇄 버튼을 눌렀을 때 페이지가 잘리거나 여백이 이상한가요?</strong>
+                  </p>
+                  <ul className="mt-4 space-y-2 text-slate-600 dark:text-slate-300">
+                    <li className="flex gap-2">
+                      <span className="text-[#3182f6]">•</span>
+                      <span>좌측 메뉴의 <strong>'비율 설정'</strong>에서 <strong>'페이지 여백'</strong>을 적절히 조절해보세요.</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-[#3182f6]">•</span>
+                      <span>크롬(Chrome) 등 브라우저 인쇄 설정에서 <strong>'배경 그래픽'</strong> 속성이 꼭 켜져 있어야 색상이 정상 출력됩니다.</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-[#3182f6]">•</span>
+                      <span>브라우저 인쇄 설정의 용지 크기가 <strong>A4</strong>로 설정되어 있는지 확인하세요.</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-[#3182f6]">•</span>
+                      <span>표가 너무 넓어 짤린다면 왼쪽 표 설정에서 <strong>'고정형'</strong> 레이아웃을 선택하세요.</span>
+                    </li>
+                  </ul>
+                </div>
+              </section>
+
+              <section className="space-y-3">
+                <h3 className={`font-bold text-base flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
+                  <span className="bg-[#3182f6] text-white w-5 h-5 rounded-full inline-flex justify-center items-center text-xs">3</span>
+                  양방향 스크롤 동기화
+                </h3>
+                <div className={`p-4 rounded-[16px] leading-relaxed text-sm ${isDarkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-[#f2f4f6]'}`}>
+                  <p>편집 모드에서 좌측 마크다운 에디터를 스크롤하면 우측 미리보기 화면도 자동으로 같은 위치를 보여줍니다. 스크롤 위치를 서로 동기화하여 긴 문서도 쉽게 파악할 수 있습니다.</p>
+                </div>
+              </section>
+
+            </div>
+            <div className={`px-6 py-4 border-t flex justify-end ${isDarkMode ? 'border-slate-700 bg-slate-800/50' : 'border-slate-100 bg-slate-50/50'}`}>
+              <button 
+                onClick={() => setIsHelpModalOpen(false)}
+                className="px-6 py-2.5 bg-[#3182f6] text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-500/20 hover:bg-[#1b64da] transition-all active:scale-95"
+              >
+                확인했어요
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
