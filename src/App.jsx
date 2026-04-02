@@ -40,11 +40,11 @@ MD 프린터는 마크다운 문서를 PDF로 변환하거나 출력할 때 최�
 window.print();
 \`\`\``);
 
-  const [html, setHtml] = useState("");
+  const [htmlPages, setHtmlPages] = useState([""]);
   const [padding, setPadding] = useState(25); 
   const [fontSize, setFontSize] = useState(16);
   const [tableFontSize, setTableFontSize] = useState(14);
-  const [tableLayout, setTableLayout] = useState("fixed");
+  const [tableLayout, setTableLayout] = useState("auto");
   const [firstColNowrap, setFirstColNowrap] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -84,10 +84,9 @@ window.print();
         content = content.replace(/<blockquote>\s*<p><strong>경고<\/strong>/g, '<blockquote class="callout-danger"><p><strong>경고</strong>');
         content = content.replace(/<blockquote>\s*<p><strong>팁<\/strong>/g, '<blockquote class="callout-success"><p><strong>팁</strong>');
         
-        // 페이지 나누기 키워드 변환
-        content = content.replace(/\[\[페이지 나누기\]\]/g, '<div class="pagebreak"><span>✂️ 페이지 나누기 (인쇄 시 여기서 다음 장으로 넘어갑니다)</span></div>');
-        
-        setHtml(content);
+        // 워드 방식: 페이지 나누기 텍스트를 기준으로 HTML을 배열로 나눔
+        const pages = content.split(/<p>\[\[페이지 나누기\]\]<\/p>\n?/);
+        setHtmlPages(pages);
       } catch (err) {
         console.error("Parsing error:", err);
       }
@@ -128,18 +127,18 @@ window.print();
       {/* Sidebar Toggle Button */}
       <button 
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className={`fixed top-6 left-6 z-50 p-3 rounded-2xl shadow-xl transition-all print:hidden ${
+        className={`fixed top-6 right-8 z-[100] p-3 rounded-2xl shadow-xl transition-all print:hidden ${
           isSidebarOpen 
-            ? 'bg-transparent text-slate-400 hover:text-slate-600' 
-            : 'bg-[#3182f6] text-white hover:bg-[#1b64da]'
+            ? 'bg-white border border-slate-200 text-slate-500 hover:text-[#3182f6] hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400' 
+            : 'bg-[#3182f6] text-white hover:bg-[#1b64da] shadow-blue-500/20'
         }`}
       >
-        {isSidebarOpen ? <ChevronLeft className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        <LayoutPanelLeft className="w-5 h-5" />
       </button>
 
       {/* Sidebar */}
       <aside 
-        className={`w-72 border-r p-6 fixed h-full z-40 flex flex-col shadow-2xl transition-transform duration-500 ease-in-out ${
+        className={`w-80 border-r p-6 fixed h-full z-40 flex flex-col shadow-2xl transition-transform duration-500 ease-in-out ${
           isDarkMode ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-200'
         } ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} print:hidden`}
       >
@@ -200,8 +199,8 @@ window.print();
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-1 bg-[#e5e8eb] dark:bg-slate-700 p-1 rounded-xl">
-                <button onClick={() => setTableLayout('fixed')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${tableLayout === 'fixed' ? 'bg-white shadow-sm text-[#3182f6]' : 'text-slate-500'}`}>고정형</button>
                 <button onClick={() => setTableLayout('auto')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${tableLayout === 'auto' ? 'bg-white shadow-sm text-[#3182f6]' : 'text-slate-500'}`}>유연하게</button>
+                <button onClick={() => setTableLayout('fixed')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${tableLayout === 'fixed' ? 'bg-white shadow-sm text-[#3182f6]' : 'text-slate-500'}`}>고정형</button>
               </div>
             </div>
 
@@ -242,7 +241,7 @@ window.print();
       </aside>
 
       {/* Main Container */}
-      <main className={`flex-1 flex flex-col lg:flex-row transition-all duration-500 ease-in-out ${isSidebarOpen ? 'ml-72' : 'ml-0'} print:m-0 print:p-0 print:block`}>
+      <main className={`flex-1 flex flex-col lg:flex-row transition-all duration-500 ease-in-out ${isSidebarOpen ? 'ml-80' : 'ml-0'} print:m-0 print:p-0 print:block`}>
         
         {/* Editor Area */}
         {isEditMode && (
@@ -269,7 +268,7 @@ window.print();
         )}
 
         {/* Preview Area */}
-        <div className={`flex-1 p-12 overflow-auto flex justify-center items-start bg-transparent print:m-0 print:p-0 print:block ${isEditMode ? 'max-h-screen' : ''}`}>
+        <div className={`flex-1 p-12 overflow-auto flex flex-col items-center bg-transparent print:m-0 print:p-0 print:block ${isEditMode ? 'max-h-screen' : ''}`}>
           <style>
             {`
               @media print {
@@ -295,42 +294,32 @@ window.print();
                 .prose .callout-success { background-color: #f4fce3 !important; }
                 .prose code { background-color: #f2f4f6 !important; }
                 .prose pre { background-color: #191f28 !important; color: white !important; }
-                /* 페이지 나누기 인쇄 스타일 */
-                .prose .pagebreak {
+                /* 여러 장의 종이 요소 인쇄 설정 */
+                .paper-preview {
                   break-after: page;
                   page-break-after: always;
-                  border: none !important;
-                  margin: 0 !important;
                 }
-                .prose .pagebreak span { display: none !important; }
+                .paper-preview:last-child {
+                  break-after: auto;
+                  page-break-after: auto;
+                }
               }
               
               .prose { max-width: 100% !important; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; transition: color 0.3s ease; }
-
-              /* 미리보기용 페이지 나누기 점선 스타일 */
-              .prose .pagebreak {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 100%;
-                margin: 3em 0;
-                border-top: 2px dashed ${isDarkMode ? '#334155' : '#cbd5e1'};
-                position: relative;
-              }
-              .prose .pagebreak span {
-                position: absolute;
-                top: -12px;
-                padding: 0 16px;
-                background-color: ${isDarkMode ? '#191f28' : '#ffffff'};
-                color: ${isDarkMode ? '#94a3b8' : '#94a3b8'};
-                font-size: 0.85em;
-                font-weight: 700;
-              }
 
               .prose h1 { font-size: 2.5em; font-weight: 800; margin-bottom: 0.8em; border-bottom: 2px solid ${isDarkMode ? '#334155' : '#f2f4f6'}; padding-bottom: 0.4em; color: ${isDarkMode ? '#ffffff' : '#191f28'}; }
               .prose h2 { font-size: 1.8em; font-weight: 700; margin-top: 1.5em; margin-bottom: 0.6em; color: ${isDarkMode ? '#f8fafc' : '#191f28'}; }
               .prose h3 { font-size: 1.4em; font-weight: 700; margin-top: 1.2em; margin-bottom: 0.4em; color: ${isDarkMode ? '#f1f5f9' : '#333d4b'}; }
               .prose p { margin-bottom: 1.2em; line-height: 1.7; color: ${isDarkMode ? '#94a3b8' : '#4e5968'}; }
+
+              /* 리스트(목록) 스타일 및 체크박스 정렬 */
+              .prose ul, .prose ol { margin-top: 0.5em; margin-bottom: 1.5em; padding-left: 1.5em; }
+              .prose li { margin-bottom: 0.8em; line-height: 1.7; color: ${isDarkMode ? '#94a3b8' : '#4e5968'}; }
+              .prose ul { list-style-type: disc; }
+              .prose ol { list-style-type: decimal; }
+              .prose li > ul, .prose li > ol { margin-top: 0.5em; margin-bottom: 0; }
+              .prose input[type="checkbox"] { width: 1.2em; height: 1.2em; margin-right: 0.5em; margin-left: -1.5em; vertical-align: -2px; accent-color: #3182f6; }
+              .prose li:has(input[type="checkbox"]) { list-style-type: none; }
 
               .prose table { 
                 width: 100% !important;
@@ -378,19 +367,54 @@ window.print();
               .prose .callout-danger strong { color: #fa5252; }
               .prose .callout-success strong { color: #82c91e; }
 
-              .prose code { background: ${isDarkMode ? '#1e293b' : '#f2f4f6'}; padding: 3px 8px; border-radius: 8px; font-family: monospace; font-size: 0.85em; color: #3182f6; font-weight: 600; }
-              .prose pre { background: #191f28; color: #f9fafb; padding: 24px; border-radius: 24px; margin: 1.5em 0; overflow-x: auto; border: 1px solid #334155; }
+              .prose :not(pre) > code { 
+                background: ${isDarkMode ? '#1e293b' : '#f2f4f6'}; 
+                padding: 3px 6px; 
+                border-radius: 6px; 
+                font-family: monospace; 
+                font-size: 0.85em; 
+                color: #3182f6; 
+                font-weight: 600; 
+              }
+              .prose pre { 
+                background: #191f28 !important; 
+                color: #e2e8f0 !important; 
+                padding: 20px 24px; 
+                border-radius: 16px; 
+                margin: 1.5em 0; 
+                overflow-x: auto; 
+                border: 1px solid ${isDarkMode ? '#334155' : '#e2e8f0'}; 
+              }
+              .prose pre code { 
+                background: transparent !important; 
+                color: inherit !important; 
+                padding: 0 !important; 
+                font-weight: 400 !important; 
+                font-size: 0.9em;
+                font-family: 'Consolas', 'Monaco', 'Courier New', monospace; 
+                line-height: 1.6;
+              }
             `}
           </style>
 
-          <div 
-            className="paper-preview transition-all duration-500 origin-top mb-20 border shadow-2xl" 
-            style={{
-              ...getPaperStyle(),
-              borderColor: isDarkMode ? '#334155' : '#f2f4f6'
-            }}
-          >
-            <div className="prose" dangerouslySetInnerHTML={{ __html: html }} />
+          <div className="w-full flex flex-col items-center gap-12 print:gap-0">
+            {htmlPages.map((pageHtml, index) => (
+              <div 
+                key={index}
+                className="paper-preview transition-all duration-500 origin-top border shadow-2xl relative" 
+                style={{
+                  ...getPaperStyle(),
+                  borderColor: isDarkMode ? '#334155' : '#f2f4f6'
+                }}
+              >
+                {htmlPages.length > 1 && (
+                  <div className="absolute -left-12 top-6 w-8 text-center text-xs font-bold text-slate-400 print:hidden">
+                    {index + 1}
+                  </div>
+                )}
+                <div className="prose" dangerouslySetInnerHTML={{ __html: pageHtml }} />
+              </div>
+            ))}
           </div>
         </div>
       </main>
