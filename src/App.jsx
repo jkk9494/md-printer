@@ -68,7 +68,7 @@ window.print();
   const [tableLayout, setTableLayout] = useState("auto");
   const [zoom, setZoom] = useState(100);
   const [markdownStyle, setMarkdownStyle] = useState('github'); // 'github' | 'obsidian'
-  const [firstColNowrap, setFirstColNowrap] = useState(true);
+  const [firstColNowrap, setFirstColNowrap] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const isPageMode = markdown.includes('[[페이지 나누기]]'); 
@@ -271,6 +271,24 @@ window.print();
               page.style.border = 'none';
               if (i < pages.length - 1) {
                 page.style.borderBottom = 'none';
+              }
+            });
+
+            // 캡처 시 인라인 코드 및 체크박스 정렬 보정 (html2canvas 렌더링 오류 방지)
+            const inlineElements = clonedElement.querySelectorAll('.prose :not(pre) > code, .prose input[type="checkbox"]');
+            inlineElements.forEach(el => {
+              if (el.tagName.toLowerCase() === 'code') {
+                el.style.display = 'inline-block';
+                el.style.verticalAlign = 'middle';
+                el.style.lineHeight = '1.2';
+                el.style.position = 'relative';
+                el.style.top = '-1px';
+              } else if (el.tagName.toLowerCase() === 'input') {
+                el.style.display = 'inline-block';
+                el.style.verticalAlign = 'middle';
+                el.style.position = 'relative';
+                el.style.top = '-2px';
+                el.style.marginRight = '8px';
               }
             });
           }
@@ -612,7 +630,16 @@ window.print();
               .prose ul { list-style-type: disc; }
               .prose ol { list-style-type: decimal; }
               .prose li > ul, .prose li > ol { margin-top: 0.5em; margin-bottom: 0; }
-              .prose input[type="checkbox"] { width: 1.2em; height: 1.2em; margin-right: 0.5em; margin-left: -1.5em; vertical-align: -2px; accent-color: #3182f6; }
+              .prose input[type="checkbox"] { 
+                width: 1.2em; 
+                height: 1.2em; 
+                margin-right: 0.5em; 
+                margin-left: -1.5em; 
+                vertical-align: middle; 
+                position: relative;
+                top: -1px;
+                accent-color: #3182f6; 
+              }
               .prose li:has(input[type="checkbox"]) { list-style-type: none; }
 
               .prose table { 
@@ -695,12 +722,17 @@ window.print();
 
               .prose :not(pre) > code { 
                 background: ${isDarkMode ? '#1e293b' : '#f2f4f6'}; 
-                padding: 3px 6px; 
+                padding: 2px 5px; 
                 border-radius: 6px; 
                 font-family: monospace; 
                 font-size: 0.85em; 
                 color: #3182f6; 
                 font-weight: 600; 
+                display: inline-block;
+                vertical-align: middle;
+                line-height: 1.2;
+                position: relative;
+                top: -1px;
               }
               .prose pre { 
                 background: #191f28 !important; 
