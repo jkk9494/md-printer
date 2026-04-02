@@ -5,6 +5,24 @@ import {
   Info, Settings2, Table2, Edit3, Eye, AlertCircle, CheckCircle2, Lightbulb, ArrowUp,
   HelpCircle, X, Plus, Minus
 } from 'lucide-react';
+import { marked } from 'marked';
+import { markedHighlight } from 'marked-highlight';
+import Prism from 'prismjs';
+
+// PrismJS 테마 및 언어 지원
+import 'prismjs/themes/prism-tomorrow.css';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-css';
+import 'prismjs/components/prism-markup'; // HTML
+import 'prismjs/components/prism-markdown';
+import 'prismjs/components/prism-json';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-sql';
+import 'prismjs/components/prism-java';
+import 'prismjs/components/prism-typescript';
+
+
 
 const App = () => {
   const [markdown, setMarkdown] = useState(`# MD 프린터 사용 설명서
@@ -53,8 +71,9 @@ window.print();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
-  const [status, setStatus] = useState("loading");
+  const [status, setStatus] = useState("ready"); // npm으로 설치된 라이브러리 사용하므로 기본값을 ready로 설정
   const fileInputRef = useRef(null);
+
 
   const editorRef = useRef(null);
   const previewRef = useRef(null);
@@ -123,31 +142,31 @@ window.print();
     }
   };
 
-  // marked 라이브러리 로드
+  // PrismJS 및 marked 확장 설정
   useEffect(() => {
-    const loadLibrary = () => {
-      if (window.marked) {
-        setStatus("ready");
-        return;
+    marked.use(markedHighlight({
+      langPrefix: 'language-',
+      highlight(code, lang) {
+        if (Prism.languages[lang]) {
+          return Prism.highlight(code, Prism.languages[lang], lang);
+        }
+        return code;
       }
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js';
-      script.async = true;
-      script.onload = () => {
-        if (window.marked) setStatus("ready");
-        else setStatus("error");
-      };
-      script.onerror = () => setStatus("error");
-      document.head.appendChild(script);
-    };
-    loadLibrary();
+    }), {
+      breaks: true,
+      gfm: true
+    });
   }, []);
+
+
+
 
   // 마크다운 변환 시 콜아웃 클래스 주입 로직
   useEffect(() => {
-    if (status === "ready" && window.marked) {
+    if (status === "ready") {
       try {
-        let content = window.marked.parse(markdown);
+        let content = marked.parse(markdown);
+
         
         // [!TYPE] 문법 파싱 로직 (GitHub/Obsidian 공용 지원)
         content = content.replace(/<blockquote>\s*<p>\[!(\w+)\]/gi, (match, type) => {
