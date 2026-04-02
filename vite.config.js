@@ -3,10 +3,10 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [
     tailwindcss(),
     react(),
   ],
-  base: './', // GitHub Pages 호환을 위해 상대 경로 사용
-})
+  base: command === 'build' ? '/md-printer/' : '/', // 빌드 시에는 GitHub Pages 경로, 로컬 서버에서는 루트 경로 사용
+}))
