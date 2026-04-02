@@ -679,6 +679,11 @@ window.print();
                   border-bottom: 1px solid ${isDarkMode ? '#334155' : '#f2f4f6'};
                   word-break: break-all;
               }
+              .prose th:has(input[type="checkbox"]), .prose td:has(input[type="checkbox"]) {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+              }
               .prose th { background: ${isDarkMode ? '#1e293b' : '#fafafa'}; font-weight: 700; color: ${isDarkMode ? '#cbd5e1' : '#4e5968'}; border-bottom: 2px solid ${isDarkMode ? '#334155' : '#f2f4f6'}; }
               .prose tr td:first-child {
                 font-weight: 700;
