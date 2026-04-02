@@ -3,8 +3,10 @@ import {
   Upload, Printer, FileText, Sun, Moon, Loader2, Type, Maximize, 
   Sparkles, Menu, ChevronLeft, LayoutPanelLeft, AlignJustify, 
   Info, Settings2, Table2, Edit3, Eye, AlertCircle, CheckCircle2, Lightbulb, ArrowUp,
-  HelpCircle, X, Plus, Minus
+  HelpCircle, X, Plus, Minus, Download
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import Prism from 'prismjs';
@@ -67,12 +69,14 @@ window.print();
   const [zoom, setZoom] = useState(100);
   const [markdownStyle, setMarkdownStyle] = useState('github'); // 'github' | 'obsidian'
   const [firstColNowrap, setFirstColNowrap] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isPageMode, setIsPageMode] = useState(true); // true: 페이지별, false: 연속형
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const isPageMode = markdown.includes('[[페이지 나누기]]'); 
+
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
   const [status, setStatus] = useState("ready"); // npm으로 설치된 라이브러리 사용하므로 기본값을 ready로 설정
   const fileInputRef = useRef(null);
 
@@ -207,6 +211,86 @@ window.print();
     reader.readAsText(file);
   };
 
+  // 한 페이지짜리 긴 PDF로 내보내기 (html2canvas + jsPDF)
+  const handleExportSinglePagePDF = async () => {
+    if (isExporting) return;
+    
+    setIsExporting(true);
+    setExportProgress(10);
+
+    try {
+      const element = document.getElementById('capture-area');
+      if (!element) throw new Error("Capture area not found");
+
+      // 1. 캡처를 위해 잠시 스타일 조정 (그림자 제거, 테두리 조정 등)
+      // html2canvas 옵션 설정
+      const canvas = await html2canvas(element, {
+        scale: 2, // 고해상도
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.getElementById('capture-area');
+          if (clonedElement) {
+            // 캡처용 클론 엘리먼트 스타일 보정
+            clonedElement.style.zoom = '1';
+            clonedElement.style.transform = 'none';
+            // 모든 페이지의 그림자와 마진 제거하여 하나로 잇기
+            const pages = clonedElement.querySelectorAll('.paper-preview');
+            pages.forEach((page, i) => {
+              page.style.boxShadow = 'none';
+              page.style.margin = '0';
+              page.style.border = 'none';
+              if (i < pages.length - 1) {
+                page.style.borderBottom = 'none';
+              }
+            });
+          }
+        }
+      });
+
+      setExportProgress(60);
+
+      const imgData = canvas.toDataURL('image/png');
+      
+      // PDF 생성
+      const imgWidth = 210; // A4 가로 (mm)
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // 이미지 높이에 맞춘 커스텀 사이즈 PDF 생성
+      const pdf = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: [imgWidth, imgHeight]
+      });
+
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+      
+      setExportProgress(90);
+      pdf.save(`MD_Printer_${new Date().getTime()}.pdf`);
+      
+    } catch (error) {
+      console.error("PDF Export Error:", error);
+      alert("PDF 생성 중 오류가 발생했습니다.");
+    } finally {
+      setIsExporting(false);
+      setExportProgress(0);
+    }
+  };
+
+  // 지능형 PDF 저장 함수
+  const handlePDFSave = () => {
+    if (isPageMode) {
+      // 페이지 나누기가 설정되어 있으면 표준 인쇄 다이얼로그 호출 (나누기 적용)
+      handlePrint();
+    } else {
+      // 페이지 나누기가 없으면 고해상도 롱 PDF로 저장
+      handleExportSinglePagePDF();
+    }
+  };
+
   const handlePrint = () => {
     // Canvas 환경에서는 직접 호출이 제한될 수 있으므로 사용자 가이드 제공
     try {
@@ -318,28 +402,6 @@ window.print();
               </button>
             </div>
           </section>
-          
-          {/* Group: 출력 모드 설정 */}
-          <section className={`p-4 rounded-[20px] space-y-4 ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
-            <label className="text-xs font-bold text-[#3182f6] uppercase tracking-widest flex items-center gap-2 mb-1">
-              <Printer className="w-4 h-4" /> 출력 모드
-            </label>
-            <div className="grid grid-cols-2 gap-1 bg-[#e5e8eb] dark:bg-slate-700 p-1 rounded-xl">
-              <button 
-                onClick={() => setIsPageMode(true)} 
-                className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${isPageMode ? 'bg-white shadow-sm text-[#3182f6]' : 'text-slate-500'}`}
-              >
-                페이지별
-              </button>
-              <button 
-                onClick={() => setIsPageMode(false)} 
-                className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${!isPageMode ? 'bg-white shadow-sm text-[#3182f6]' : 'text-slate-500'}`}
-              >
-                연속형
-              </button>
-            </div>
-          </section>
-
 
           {/* Group 3: 표 설정 */}
           <section className={`p-4 rounded-[20px] space-y-4 ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
@@ -392,12 +454,29 @@ window.print();
               테마
             </button>
           </div>
-          <button onClick={handlePrint} disabled={status !== "ready"} className="w-full py-4 bg-[#3182f6] text-white rounded-[20px] text-sm font-bold shadow-xl shadow-blue-500/10 hover:bg-[#1b64da] transition-all flex items-center justify-center gap-2 active:scale-95">
-            {status === "loading" ? <Loader2 className="w-5 h-5 animate-spin" /> : <Printer className="w-5 h-5" />}
-            인쇄 및 PDF 저장
-          </button>
+          <div className="grid grid-cols-1 gap-2 mt-4">
+            <button 
+              onClick={handlePDFSave} 
+              disabled={isExporting}
+              className={`w-full py-4 rounded-[20px] text-sm font-bold shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95 ${isExporting ? 'bg-slate-400 cursor-not-allowed text-white' : 'bg-[#3182f6] text-white hover:bg-[#1b64da] shadow-blue-500/10'}`}
+            >
+              {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+              PDF 저장
+            </button>
+            <button 
+              onClick={handlePrint} 
+              disabled={status !== "ready" || isExporting} 
+              className={`w-full py-3 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-[20px] text-sm font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50`}
+            >
+              <Printer className="w-4 h-4" />
+              인쇄
+            </button>
+          </div>
         </div>
       </aside>
+
+
+
 
       {/* Main Container */}
       <main className={`flex-1 flex flex-col lg:flex-row transition-all duration-500 ease-in-out ${isSidebarOpen ? 'ml-80' : 'ml-0'} print:m-0 print:p-0 print:block`}>
@@ -617,7 +696,11 @@ window.print();
             `}
           </style>
 
-          <div className={`w-full flex flex-col items-center print:gap-0 print:block print:w-full print:bg-white ${isPageMode ? 'gap-12' : 'gap-0'}`} style={{ zoom: `${zoom}%` }}>
+          <div 
+            id="capture-area"
+            className={`w-full flex flex-col items-center print:gap-0 print:block print:w-full print:bg-white ${isPageMode ? 'gap-12' : 'gap-0'}`} 
+            style={{ zoom: `${zoom}%` }}
+          >
             {htmlPages.map((pageHtml, index) => (
               <div 
                 key={index}
@@ -645,23 +728,37 @@ window.print();
       <div className="fixed bottom-8 right-8 z-[100] flex flex-col items-center gap-4 print:hidden">
         {/* Zoom Controls */}
         {!isEditMode && (
-          <div className={`flex flex-col items-center p-1.5 rounded-full shadow-xl backdrop-blur-md ${isDarkMode ? 'bg-slate-800/90 border border-slate-700' : 'bg-white/90 border border-slate-200'}`}>
-            <button onClick={() => setZoom(p => Math.min(p + 10, 200))} className={`p-2.5 rounded-full transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-100 text-[#3182f6]'}`} title="확대">
-              <Plus className="w-5 h-5" />
-            </button>
-            <button onClick={() => setZoom(100)} className={`py-1 text-[11px] font-bold w-full text-center transition-colors ${isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-[#3182f6]'}`} title="기본 크기로">
-              {zoom}%
-            </button>
-            <button onClick={() => setZoom(p => Math.max(p - 10, 30))} className={`p-2.5 rounded-full transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-100 text-[#3182f6]'}`} title="축소">
-              <Minus className="w-5 h-5" />
-            </button>
-          </div>
+          <>
+            <div className={`flex flex-col items-center p-1.5 rounded-full shadow-xl backdrop-blur-md ${isDarkMode ? 'bg-slate-800/90 border border-slate-700' : 'bg-white/90 border border-slate-200'}`}>
+              <button onClick={() => setZoom(p => Math.min(p + 10, 200))} className={`p-2.5 rounded-full transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-100 text-[#3182f6]'}`} title="확대">
+                <Plus className="w-5 h-5" />
+              </button>
+              <button onClick={() => setZoom(100)} className={`py-1 text-[11px] font-bold w-full text-center transition-colors ${isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-[#3182f6]'}`} title="기본 크기로">
+                {zoom}%
+              </button>
+              <button onClick={() => setZoom(p => Math.max(p - 10, 30))} className={`p-2.5 rounded-full transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-100 text-[#3182f6]'}`} title="축소">
+                <Minus className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* PDF & Print Actions */}
+            <div className={`flex flex-col items-center p-1.5 rounded-full shadow-xl backdrop-blur-md ${isDarkMode ? 'bg-slate-800/90 border border-slate-700' : 'bg-white/90 border border-slate-200'}`}>
+              <button onClick={handlePDFSave} className={`p-3 rounded-full transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-100 text-[#3182f6]'}`} title="PDF 저장">
+                <Download className="w-5 h-5" />
+              </button>
+              <button onClick={() => handlePrint()} className={`p-3 rounded-full transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-100 text-[#3182f6]'}`} title="인쇄">
+                <Printer className="w-5 h-5" />
+              </button>
+            </div>
+          </>
         )}
+
+
 
         {/* Scroll to Top FAB */}
         <button
           onClick={scrollToTop}
-          className={`w-14 h-14 rounded-full shadow-2xl hover:scale-110 hover:-translate-y-1 transition-all flex items-center justify-center ${isDarkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-[#3182f6] text-white hover:bg-[#1b64da] shadow-blue-500/30'}`}
+          className={`w-14 h-14 rounded-full shadow-2xl hover:scale-110 hover:-translate-y-1 transition-all flex items-center justify-center print:hidden ${isDarkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-[#3182f6] text-white hover:bg-[#1b64da] shadow-blue-500/30'}`}
         >
           <ArrowUp className="w-6 h-6" />
         </button>
@@ -751,8 +848,24 @@ window.print();
           </div>
         </div>
       )}
+      {/* Export Overlay */}
+      {isExporting && (
+        <div className="fixed inset-0 z-[200] bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
+          <div className="w-64 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-4">
+            <div 
+              className="h-full bg-[#3182f6] transition-all duration-300 ease-out"
+              style={{ width: `${exportProgress}%` }}
+            />
+          </div>
+          <p className="text-sm font-bold text-slate-600 dark:text-slate-300 animate-pulse">
+            고화질 PDF 생성 중... ({exportProgress}%)
+          </p>
+          <p className="text-xs text-slate-400 mt-2">잠시만 기다려 주세요.</p>
+        </div>
+      )}
     </div>
   );
 };
+
 
 export default App;
