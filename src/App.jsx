@@ -342,11 +342,12 @@ window.print();
           <style>
             {`
               @media print {
-                @page { size: auto; margin: 0; }
+                @page { size: auto; margin: ${padding}mm; }
                 html, body, #root { background: white !important; -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
                 .paper-preview { 
                   box-shadow: none !important; 
-                  margin: 0 !important; 
+                  margin: 0 !important;
+                  padding: 0 !important;
                   border: none !important; 
                   width: 100% !important; 
                   min-height: auto !important;
