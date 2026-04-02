@@ -68,7 +68,9 @@ window.print();
   const [markdownStyle, setMarkdownStyle] = useState('github'); // 'github' | 'obsidian'
   const [firstColNowrap, setFirstColNowrap] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isPageMode, setIsPageMode] = useState(true); // true: 페이지별, false: 연속형
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   const [isEditMode, setIsEditMode] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [status, setStatus] = useState("ready"); // npm으로 설치된 라이브러리 사용하므로 기본값을 ready로 설정
@@ -180,14 +182,21 @@ window.print();
         content = content.replace(/<blockquote>\s*<p><strong>경고<\/strong>/g, '<blockquote class="callout-danger"><p><strong>경고</strong>');
         content = content.replace(/<blockquote>\s*<p><strong>팁<\/strong>/g, '<blockquote class="callout-success"><p><strong>팁</strong>');
         
-        // 워드 방식: 페이지 나누기 텍스트를 기준으로 HTML을 배열로 나눔
-        const pages = content.split(/<p>\[\[페이지 나누기\]\]<\/p>\n?/);
-        setHtmlPages(pages);
+        if (isPageMode) {
+          // 페이지별 모드: 페이지 나누기 텍스트를 기준으로 HTML을 배열로 나눔
+          const pages = content.split(/<p>\[\[페이지 나누기\]\]<\/p>\n?/);
+          setHtmlPages(pages);
+        } else {
+          // 연속형 모드: [[페이지 나누기]] 텍스트를 제거하고 하나의 페이지로 처리
+          const singleContent = content.replace(/<p>\[\[페이지 나누기\]\]<\/p>\n?/g, '');
+          setHtmlPages([singleContent]);
+        }
       } catch (err) {
         console.error("Parsing error:", err);
       }
     }
-  }, [markdown, status]);
+  }, [markdown, status, isPageMode]);
+
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -209,13 +218,16 @@ window.print();
   const getPaperStyle = () => {
     return {
       width: '210mm',
-      minHeight: '297mm',
+      minHeight: isPageMode ? '297mm' : 'auto',
       padding: `${padding}mm`,
       fontSize: `${fontSize}px`,
       backgroundColor: isDarkMode ? '#191f28' : '#ffffff',
-      color: isDarkMode ? '#e5e8eb' : '#333d4b'
+      color: isDarkMode ? '#e5e8eb' : '#333d4b',
+      boxShadow: isPageMode ? '' : 'none',
+      marginBottom: isPageMode ? '' : '0'
     };
   };
+
 
   return (
     <div className={`min-h-screen flex transition-colors duration-500 print:bg-white print:block print:min-h-0 ${isDarkMode ? 'bg-[#0f172a]' : 'bg-[#f2f4f6]'}`}>
@@ -305,6 +317,28 @@ window.print();
               </button>
             </div>
           </section>
+          
+          {/* Group: 출력 모드 설정 */}
+          <section className={`p-4 rounded-[20px] space-y-4 ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+            <label className="text-xs font-bold text-[#3182f6] uppercase tracking-widest flex items-center gap-2 mb-1">
+              <Printer className="w-4 h-4" /> 출력 모드
+            </label>
+            <div className="grid grid-cols-2 gap-1 bg-[#e5e8eb] dark:bg-slate-700 p-1 rounded-xl">
+              <button 
+                onClick={() => setIsPageMode(true)} 
+                className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${isPageMode ? 'bg-white shadow-sm text-[#3182f6]' : 'text-slate-500'}`}
+              >
+                페이지별
+              </button>
+              <button 
+                onClick={() => setIsPageMode(false)} 
+                className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${!isPageMode ? 'bg-white shadow-sm text-[#3182f6]' : 'text-slate-500'}`}
+              >
+                연속형
+              </button>
+            </div>
+          </section>
+
 
           {/* Group 3: 표 설정 */}
           <section className={`p-4 rounded-[20px] space-y-4 ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
@@ -427,14 +461,17 @@ window.print();
                 .prose pre { background-color: #191f28 !important; color: white !important; }
                 /* 여러 장의 종이 요소 인쇄 설정 */
                 .paper-preview {
-                  break-after: page;
-                  page-break-after: always;
+                  break-after: ${isPageMode ? 'page' : 'auto'};
+                  page-break-after: ${isPageMode ? 'always' : 'auto'};
+                  margin-bottom: ${isPageMode ? '' : '0 !important'};
+                  box-shadow: none !important;
                 }
                 .paper-preview:last-child {
                   break-after: auto;
                   page-break-after: auto;
                 }
               }
+
               
               .prose { max-width: 100% !important; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; transition: color 0.3s ease; }
 
@@ -560,16 +597,18 @@ window.print();
             `}
           </style>
 
-          <div className="w-full flex flex-col items-center gap-12 print:gap-0 print:block print:w-full print:bg-white" style={{ zoom: `${zoom}%` }}>
+          <div className={`w-full flex flex-col items-center print:gap-0 print:block print:w-full print:bg-white ${isPageMode ? 'gap-12' : 'gap-0'}`} style={{ zoom: `${zoom}%` }}>
             {htmlPages.map((pageHtml, index) => (
               <div 
                 key={index}
-                className="paper-preview transition-all duration-500 origin-top border shadow-2xl relative" 
+                className={`paper-preview transition-all duration-500 origin-top border relative ${isPageMode ? 'shadow-2xl' : 'shadow-none'}`} 
                 style={{
                   ...getPaperStyle(),
-                  borderColor: isDarkMode ? '#334155' : '#f2f4f6'
+                  borderColor: isDarkMode ? '#334155' : '#f2f4f6',
+                  borderBottomWidth: isPageMode ? '1px' : (index === htmlPages.length - 1 ? '1px' : '0')
                 }}
               >
+
                 {htmlPages.length > 1 && (
                   <div className="absolute -left-12 top-6 w-8 text-center text-xs font-bold text-slate-400 print:hidden">
                     {index + 1}
