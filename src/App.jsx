@@ -47,6 +47,7 @@ window.print();
   const [tableFontSize, setTableFontSize] = useState(13);
   const [tableLayout, setTableLayout] = useState("auto");
   const [zoom, setZoom] = useState(100);
+  const [markdownStyle, setMarkdownStyle] = useState('github'); // 'github' | 'obsidian'
   const [firstColNowrap, setFirstColNowrap] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -148,7 +149,13 @@ window.print();
       try {
         let content = window.marked.parse(markdown);
         
-        // 특정 키워드에 따른 콜아웃 클래스 변환 (간이 구현)
+        // [!TYPE] 문법 파싱 로직 (GitHub/Obsidian 공용 지원)
+        content = content.replace(/<blockquote>\s*<p>\[!(\w+)\]/gi, (match, type) => {
+          const lowerType = type.toLowerCase();
+          return `<blockquote class="callout-${lowerType}">`;
+        });
+        
+        // 기존 한국어 스타일 호환성 유지
         content = content.replace(/<blockquote>\s*<p><strong>안내<\/strong>/g, '<blockquote class="callout-info"><p><strong>안내</strong>');
         content = content.replace(/<blockquote>\s*<p><strong>주의<\/strong>/g, '<blockquote class="callout-warning"><p><strong>주의</strong>');
         content = content.replace(/<blockquote>\s*<p><strong>경고<\/strong>/g, '<blockquote class="callout-danger"><p><strong>경고</strong>');
@@ -259,7 +266,28 @@ window.print();
             </div>
           </section>
 
-          {/* Group 2: 표 설정 */}
+           {/* Group 2: 마크다운 스타일 */}
+          <section className={`p-4 rounded-[20px] space-y-4 ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+            <label className="text-xs font-bold text-[#3182f6] uppercase tracking-widest flex items-center gap-2 mb-1">
+              <FileText className="w-4 h-4" /> 문서 스타일
+            </label>
+            <div className="grid grid-cols-2 gap-1 bg-[#e5e8eb] dark:bg-slate-700 p-1 rounded-xl">
+              <button 
+                onClick={() => setMarkdownStyle('github')} 
+                className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${markdownStyle === 'github' ? 'bg-white shadow-sm text-[#3182f6]' : 'text-slate-500'}`}
+              >
+                GitHub
+              </button>
+              <button 
+                onClick={() => setMarkdownStyle('obsidian')} 
+                className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${markdownStyle === 'obsidian' ? 'bg-white shadow-sm text-[#3182f6]' : 'text-slate-500'}`}
+              >
+                Obsidian
+              </button>
+            </div>
+          </section>
+
+          {/* Group 3: 표 설정 */}
           <section className={`p-4 rounded-[20px] space-y-4 ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
             <label className="text-xs font-bold text-[#3182f6] uppercase tracking-widest flex items-center gap-2 mb-1">
               <Table2 className="w-4 h-4" /> 표 설정
@@ -431,25 +459,57 @@ window.print();
                 width: ${tableLayout === 'fixed' ? '25%' : 'auto'};
               }
 
-              /* 기본 콜아웃 (안내) */
+              /* 기본 콜아웃 공통 테두리 및 둥글기 */
               .prose blockquote { 
                 margin: 1.5em 0;
-                padding: 24px 30px;
-                background-color: ${isDarkMode ? '#1e293b' : '#f2f4f6'};
-                border-radius: 20px;
-                border: none;
+                padding: ${markdownStyle === 'github' ? '12px 20px' : '20px 24px'};
+                background-color: ${isDarkMode ? '#1e293b' : (markdownStyle === 'github' ? 'transparent' : '#f2f4f6')};
+                border-radius: ${markdownStyle === 'github' ? '0px' : '16px'};
+                border-left: 4px solid #3182f6;
+                transition: all 0.3s;
               }
               
-              /* 특수 콜아웃 스타일 */
-              .prose .callout-warning { background-color: ${isDarkMode ? '#453008' : '#fff9db'}; border-left: 6px solid #fab005; border-radius: 12px 20px 20px 12px; }
-              .prose .callout-danger { background-color: ${isDarkMode ? '#4c1d1d' : '#fff5f5'}; border-left: 6px solid #fa5252; border-radius: 12px 20px 20px 12px; }
-              .prose .callout-success { background-color: ${isDarkMode ? '#1e3a1e' : '#f4fce3'}; border-left: 6px solid #82c91e; border-radius: 12px 20px 20px 12px; }
+              /* [!TYPE] 내부 문구 및 강조 */
+              .prose blockquote p:first-child {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 800;
+                font-size: ${markdownStyle === 'github' ? '0.9em' : '1em'};
+                margin-bottom: 8px;
+                text-transform: uppercase;
+              }
+
+              /* GitHub 스타일: 테두리만 강조하고 배경은 없거나 옅게 */
+              ${markdownStyle === 'github' ? `
+                .prose blockquote { border: 1px solid ${isDarkMode ? '#334155' : '#e5e8eb'}; border-left-width: 4px; background: transparent; }
+                .prose .callout-note { border-left-color: #3182f6; }
+                .prose .callout-tip { border-left-color: #238636; }
+                .prose .callout-important { border-left-color: #8957e5; }
+                .prose .callout-warning { border-left-color: #d29922; }
+                .prose .callout-caution { border-left-color: #da3633; }
+                .prose .callout-danger { border-left-color: #da3633; }
+                .prose .callout-success { border-left-color: #238636; }
+                
+                .prose .callout-note p:first-child { color: #3182f6; }
+                .prose .callout-tip p:first-child { color: #238636; }
+                .prose .callout-important p:first-child { color: #8957e5; }
+                .prose .callout-warning p:first-child { color: #d29922; }
+                .prose .callout-caution p:first-child { color: #da3633; }
+                .prose .callout-danger p:first-child { color: #da3633; }
+              ` : `
+                /* Obsidian 스타일: 배경색을 충분히 사용 */
+                .prose .callout-note { background-color: ${isDarkMode ? 'rgba(49, 130, 246, 0.15)' : 'rgba(49, 130, 246, 0.05)'}; border-left-color: #3182f6; }
+                .prose .callout-tip { background-color: ${isDarkMode ? 'rgba(35, 134, 54, 0.15)' : 'rgba(35, 134, 54, 0.05)'}; border-left-color: #238636; }
+                .prose .callout-important { background-color: ${isDarkMode ? 'rgba(137, 87, 229, 0.15)' : 'rgba(137, 87, 229, 0.05)'}; border-left-color: #8957e5; }
+                .prose .callout-warning { background-color: ${isDarkMode ? 'rgba(210, 153, 34, 0.15)' : 'rgba(210, 153, 34, 0.05)'}; border-left-color: #d29922; }
+                .prose .callout-caution, .prose .callout-danger { background-color: ${isDarkMode ? 'rgba(218, 54, 51, 0.15)' : 'rgba(218, 54, 51, 0.05)'}; border-left-color: #da3633; }
+                
+                .prose blockquote p:first-child { opacity: 0.9; }
+              `}
               
-              .prose blockquote p { margin: 0; color: ${isDarkMode ? '#cbd5e1' : '#333d4b'}; font-weight: 500; font-size: 0.95em; }
-              .prose blockquote strong { color: #3182f6; display: block; margin-bottom: 6px; font-size: 1.1em; }
-              .prose .callout-warning strong { color: #fab005; }
-              .prose .callout-danger strong { color: #fa5252; }
-              .prose .callout-success strong { color: #82c91e; }
+              .prose blockquote p { margin-bottom: 0; color: ${isDarkMode ? '#cbd5e1' : '#333d4b'}; font-weight: 400; font-size: 0.95em; }
+              .prose blockquote strong { color: inherit; display: inline; margin-bottom: 0; }
 
               .prose :not(pre) > code { 
                 background: ${isDarkMode ? '#1e293b' : '#f2f4f6'}; 
