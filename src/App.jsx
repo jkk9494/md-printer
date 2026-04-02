@@ -186,7 +186,7 @@ window.print();
   };
 
   return (
-    <div className={`min-h-screen flex transition-colors duration-500 ${isDarkMode ? 'bg-[#0f172a]' : 'bg-[#f2f4f6]'}`}>
+    <div className={`min-h-screen flex transition-colors duration-500 print:bg-white print:block print:min-h-0 ${isDarkMode ? 'bg-[#0f172a]' : 'bg-[#f2f4f6]'}`}>
       
       {/* Sidebar Toggle Button */}
       <button 
@@ -342,14 +342,14 @@ window.print();
           <style>
             {`
               @media print {
-                @page { size: A4 portrait; margin: 0; }
-                body { background: white !important; -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+                @page { size: auto; margin: 0; }
+                html, body, #root { background: white !important; -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
                 .paper-preview { 
                   box-shadow: none !important; 
                   margin: 0 !important; 
                   border: none !important; 
-                  width: 210mm !important; 
-                  min-height: 297mm !important;
+                  width: 100% !important; 
+                  min-height: auto !important;
                   background-color: white !important;
                   color: #191f28 !important;
                   transform: none !important;
@@ -467,7 +467,7 @@ window.print();
             `}
           </style>
 
-          <div className="w-full flex flex-col items-center gap-12 print:gap-0">
+          <div className="w-full flex flex-col items-center gap-12 print:gap-0 print:block print:w-full print:bg-white">
             {htmlPages.map((pageHtml, index) => (
               <div 
                 key={index}
