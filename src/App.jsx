@@ -184,13 +184,14 @@ window.print();
         
         if (isPageMode) {
           // 페이지별 모드: 페이지 나누기 텍스트를 기준으로 HTML을 배열로 나눔
-          const pages = content.split(/<p>\[\[페이지 나누기\]\]<\/p>\n?/);
+          const pages = content.split(/<p>\s*\[\[페이지 나누기\]\]\s*<\/p>\n?/g);
           setHtmlPages(pages);
         } else {
           // 연속형 모드: [[페이지 나누기]] 텍스트를 제거하고 하나의 페이지로 처리
-          const singleContent = content.replace(/<p>\[\[페이지 나누기\]\]<\/p>\n?/g, '');
+          const singleContent = content.replace(/<p>\s*\[\[페이지 나누기\]\]\s*<\/p>\n?/g, '');
           setHtmlPages([singleContent]);
         }
+
       } catch (err) {
         console.error("Parsing error:", err);
       }
@@ -436,7 +437,11 @@ window.print();
           <style>
             {`
               @media print {
-                @page { size: A4 portrait; margin: ${padding}mm; }
+                @page { 
+                  size: ${isPageMode ? 'A4 portrait' : 'auto'}; 
+                  margin: ${isPageMode ? padding + 'mm' : '0'}; 
+                }
+
                 html, body, #root { background: white !important; -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
                 .paper-preview { 
                   box-shadow: none !important; 
@@ -448,6 +453,19 @@ window.print();
                   background-color: white !important;
                   color: #191f28 !important;
                   transform: none !important;
+                  break-after: ${isPageMode ? 'page' : 'auto'};
+                  page-break-after: ${isPageMode ? 'always' : 'auto'};
+                  margin-bottom: ${isPageMode ? '' : '0 !important'};
+                  /* 연속형 모드에서는 페이지 간 이음새가 없도록 패딩과 마진을 인위적으로 조정 */
+                  padding-top: ${isPageMode ? '' : padding + 'mm !important'};
+                  padding-bottom: ${isPageMode ? '' : padding + 'mm !important'};
+                  padding-left: ${isPageMode ? '' : padding + 'mm !important'};
+                  padding-right: ${isPageMode ? '' : padding + 'mm !important'};
+                }
+
+                .paper-preview:last-child {
+                  break-after: auto;
+                  page-break-after: auto;
                 }
                 aside, button, textarea, .print-hidden { display: none !important; }
                 main { margin: 0 !important; padding: 0 !important; display: block !important; width: 100% !important; }
@@ -459,18 +477,20 @@ window.print();
                 .prose .callout-success { background-color: #f4fce3 !important; }
                 .prose code { background-color: #f2f4f6 !important; }
                 .prose pre { background-color: #191f28 !important; color: white !important; }
-                /* 여러 장의 종이 요소 인쇄 설정 */
-                .paper-preview {
-                  break-after: ${isPageMode ? 'page' : 'auto'};
-                  page-break-after: ${isPageMode ? 'always' : 'auto'};
-                  margin-bottom: ${isPageMode ? '' : '0 !important'};
-                  box-shadow: none !important;
+                
+                .prose { 
+                  page-break-inside: auto;
+                  break-inside: auto;
                 }
-                .paper-preview:last-child {
-                  break-after: auto;
-                  page-break-after: auto;
+                /* 페이지별 모드에서는 덩어리가 잘리는 것을 방지, 연속형에서는 흐름 중시 */
+                .prose blockquote, .prose table, .prose pre {
+                  page-break-inside: ${isPageMode ? 'avoid' : 'auto'};
+                  break-inside: ${isPageMode ? 'avoid' : 'auto'};
                 }
               }
+
+
+
 
               
               .prose { max-width: 100% !important; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; transition: color 0.3s ease; }
