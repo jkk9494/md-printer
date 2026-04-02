@@ -342,7 +342,7 @@ window.print();
           <style>
             {`
               @media print {
-                @page { size: auto; margin: ${padding}mm; }
+                @page { size: A4 portrait; margin: ${padding}mm; }
                 html, body, #root { background: white !important; -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
                 .paper-preview { 
                   box-shadow: none !important; 
