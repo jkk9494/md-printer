@@ -278,17 +278,35 @@ window.print();
             const inlineElements = clonedElement.querySelectorAll('.prose :not(pre) > code, .prose input[type="checkbox"]');
             inlineElements.forEach(el => {
               if (el.tagName.toLowerCase() === 'code') {
-                el.style.display = 'inline-block';
-                el.style.verticalAlign = 'middle';
-                el.style.lineHeight = '1.2';
-                el.style.position = 'relative';
-                el.style.top = '-1px';
+                el.style.display = 'inline';
+                el.style.verticalAlign = 'baseline';
+                el.style.wordBreak = 'break-word';
+                el.style.whiteSpace = 'pre-wrap';
               } else if (el.tagName.toLowerCase() === 'input') {
-                el.style.display = 'inline-block';
-                el.style.verticalAlign = 'middle';
-                el.style.position = 'relative';
-                el.style.top = '-2px';
-                el.style.marginRight = '8px';
+                const isChecked = el.checked;
+                const fakeBox = clonedDoc.createElement('span');
+                fakeBox.style.display = 'inline-block';
+                fakeBox.style.width = '1.2em';
+                fakeBox.style.height = '1.2em';
+                fakeBox.style.borderRadius = '3px';
+                fakeBox.style.verticalAlign = 'middle';
+                fakeBox.style.marginRight = '0.5em';
+                fakeBox.style.marginLeft = '-1.5em';
+                fakeBox.style.position = 'relative';
+                fakeBox.style.top = '-1px';
+                
+                if (isChecked) {
+                  fakeBox.style.backgroundColor = '#3182f6';
+                  fakeBox.style.border = 'none';
+                  fakeBox.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="width: 100%; height: 100%; padding: 2px; box-sizing: border-box;"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+                } else {
+                  fakeBox.style.backgroundColor = 'white';
+                  fakeBox.style.border = '1.5px solid #cbd5e1';
+                }
+                
+                if (el.parentNode) {
+                  el.parentNode.replaceChild(fakeBox, el);
+                }
               }
             });
           }
@@ -722,17 +740,13 @@ window.print();
 
               .prose :not(pre) > code { 
                 background: ${isDarkMode ? '#1e293b' : '#f2f4f6'}; 
-                padding: 2px 5px; 
+                padding: 0.2em 0.4em; 
                 border-radius: 6px; 
                 font-family: monospace; 
                 font-size: 0.85em; 
                 color: #3182f6; 
                 font-weight: 600; 
-                display: inline-block;
-                vertical-align: middle;
-                line-height: 1.2;
-                position: relative;
-                top: -1px;
+                word-break: break-word;
               }
               .prose pre { 
                 background: #191f28 !important; 
@@ -910,14 +924,9 @@ window.print();
       {/* Export Overlay */}
       {isExporting && (
         <div className="fixed inset-0 z-[200] bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
-          <div className="w-64 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-4">
-            <div 
-              className="h-full bg-[#3182f6] transition-all duration-300 ease-out"
-              style={{ width: `${exportProgress}%` }}
-            />
-          </div>
+          <Loader2 className="w-12 h-12 text-[#3182f6] animate-spin mb-4" />
           <p className="text-sm font-bold text-slate-600 dark:text-slate-300 animate-pulse">
-            고화질 PDF 생성 중... ({exportProgress}%)
+            진행중...
           </p>
           <p className="text-xs text-slate-400 mt-2">잠시만 기다려 주세요.</p>
         </div>
