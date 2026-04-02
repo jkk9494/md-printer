@@ -61,15 +61,18 @@ window.print();
     if (editorRef.current) {
       const start = editorRef.current.selectionStart;
       const end = editorRef.current.selectionEnd;
+      const currentScrollTop = editorRef.current.scrollTop;
+      
       const injection = '\n\n[[페이지 나누기]]\n\n';
       const newMarkdown = markdown.substring(0, start) + injection + markdown.substring(end);
       setMarkdown(newMarkdown);
       
-      // 상태 업데이트 후 커서를 주입된 텍스트 뒤로 이동
+      // 상태 업데이트 후 커서 및 스크롤 위치 복원
       setTimeout(() => {
         if (editorRef.current) {
           editorRef.current.focus();
           editorRef.current.selectionStart = editorRef.current.selectionEnd = start + injection.length;
+          editorRef.current.scrollTop = currentScrollTop;
         }
       }, 0);
     } else {
