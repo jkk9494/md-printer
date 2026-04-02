@@ -84,6 +84,9 @@ window.print();
         content = content.replace(/<blockquote>\s*<p><strong>경고<\/strong>/g, '<blockquote class="callout-danger"><p><strong>경고</strong>');
         content = content.replace(/<blockquote>\s*<p><strong>팁<\/strong>/g, '<blockquote class="callout-success"><p><strong>팁</strong>');
         
+        // 페이지 나누기 키워드 변환
+        content = content.replace(/\[\[페이지 나누기\]\]/g, '<div class="pagebreak"><span>✂️ 페이지 나누기 (인쇄 시 여기서 다음 장으로 넘어갑니다)</span></div>');
+        
         setHtml(content);
       } catch (err) {
         console.error("Parsing error:", err);
@@ -136,82 +139,82 @@ window.print();
 
       {/* Sidebar */}
       <aside 
-        className={`w-80 border-r p-8 fixed h-full z-40 flex flex-col shadow-2xl transition-transform duration-500 ease-in-out ${
+        className={`w-72 border-r p-6 fixed h-full z-40 flex flex-col shadow-2xl transition-transform duration-500 ease-in-out ${
           isDarkMode ? 'bg-[#1e293b] border-slate-700' : 'bg-white border-slate-200'
         } ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} print:hidden`}
       >
-        <div className="flex items-center gap-3 mb-8 pl-10">
+        <div className="flex items-center gap-3 mb-6 pl-2">
           <div className="bg-[#3182f6] p-2 rounded-xl">
             <Sparkles className="text-white w-5 h-5" />
           </div>
           <h1 className={`text-xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-[#191f28]'}`}>MD 프린터</h1>
         </div>
 
-        <div className="space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+        <div className="space-y-5 flex-1 overflow-y-auto pr-2 custom-scrollbar">
           {/* File Upload Section */}
           <section>
-            <button onClick={() => fileInputRef.current.click()} className={`w-full py-5 border-2 border-dashed rounded-[24px] transition-all flex flex-col items-center gap-2 group ${isDarkMode ? 'border-slate-600 hover:border-blue-400 hover:bg-slate-800' : 'border-slate-200 hover:border-[#3182f6] hover:bg-[#f2f4f6]'}`}>
+            <button onClick={() => fileInputRef.current.click()} className={`w-full py-4 border-2 border-dashed rounded-[20px] transition-all flex flex-col items-center gap-2 group ${isDarkMode ? 'border-slate-600 hover:border-blue-400 hover:bg-slate-800' : 'border-slate-200 hover:border-[#3182f6] hover:bg-[#f2f4f6]'}`}>
               <Upload className={`w-5 h-5 transition-colors ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
-              <span className={`text-xs font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>파일 불러오기</span>
+              <span className={`text-sm font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>파일 불러오기</span>
             </button>
             <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".md" className="hidden" />
           </section>
 
           {/* Group 1: 비율 설정 */}
-          <section className={`p-5 rounded-[24px] space-y-5 ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
-            <label className="text-[10px] font-bold text-[#3182f6] uppercase tracking-widest flex items-center gap-2 mb-2">
-              <Settings2 className="w-3 h-3" /> 비율 설정
+          <section className={`p-4 rounded-[20px] space-y-4 ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+            <label className="text-xs font-bold text-[#3182f6] uppercase tracking-widest flex items-center gap-2 mb-1">
+              <Settings2 className="w-4 h-4" /> 비율 설정
             </label>
             
             <div>
               <div className="flex justify-between mb-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">페이지 여백</label>
-                <span className="text-[#3182f6] font-bold text-[10px]">{padding}mm</span>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">페이지 여백</label>
+                <span className="text-[#3182f6] font-bold text-xs">{padding}mm</span>
               </div>
               <input type="range" min="5" max="60" value={padding} onChange={(e) => setPadding(parseInt(e.target.value))} className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-[#3182f6]" />
             </div>
 
             <div>
               <div className="flex justify-between mb-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">전체 글자 크기</label>
-                <span className="text-[#3182f6] font-bold text-[10px]">{fontSize}px</span>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">전체 글자 크기</label>
+                <span className="text-[#3182f6] font-bold text-xs">{fontSize}px</span>
               </div>
               <input type="range" min="12" max="24" value={fontSize} onChange={(e) => setFontSize(parseInt(e.target.value))} className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-[#3182f6]" />
             </div>
           </section>
 
           {/* Group 2: 표 설정 */}
-          <section className={`p-5 rounded-[24px] space-y-5 ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
-            <label className="text-[10px] font-bold text-[#3182f6] uppercase tracking-widest flex items-center gap-2 mb-2">
-              <Table2 className="w-3 h-3" /> 표 설정
+          <section className={`p-4 rounded-[20px] space-y-4 ${isDarkMode ? 'bg-slate-800/50' : 'bg-slate-50'}`}>
+            <label className="text-xs font-bold text-[#3182f6] uppercase tracking-widest flex items-center gap-2 mb-1">
+              <Table2 className="w-4 h-4" /> 표 설정
             </label>
 
             <div className="relative group/tooltip">
               <div className="flex items-center justify-between mb-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                  표 레이아웃 <Info className="w-3 h-3 text-slate-300 cursor-help" />
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                  표 레이아웃 <Info className="w-3 h-3 text-slate-400 cursor-help" />
                 </label>
-                <div className="hidden group-hover/tooltip:block absolute bottom-full left-0 mb-2 p-3 bg-slate-900 text-white text-[10px] rounded-xl shadow-xl w-64 z-50 leading-relaxed">
-                  <p><strong>고정형:</strong> 모든 열을 동일 비율로 나누고 넘치는 글자는 줄바꿈합니다. (가장 안전한 설정)</p>
-                  <p className="mt-2"><strong>유연하게:</strong> 내용의 길이에 따라 열 너비가 자동으로 조절됩니다.</p>
+                <div className="hidden group-hover/tooltip:block absolute bottom-full left-0 mb-2 p-3 bg-slate-900 text-white text-xs rounded-xl shadow-xl w-60 z-50 leading-relaxed">
+                  <p><strong>고정형:</strong> 모든 열을 동일 비율로 나누고 넘치는 글자는 줄바꿈합니다. (안전함)</p>
+                  <p className="mt-2"><strong>유연하게:</strong> 내용 길이에 따라 열 너비가 자동 조절됩니다.</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-1 bg-[#e5e8eb] dark:bg-slate-700 p-1 rounded-xl">
-                <button onClick={() => setTableLayout('fixed')} className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${tableLayout === 'fixed' ? 'bg-white shadow-sm text-[#3182f6]' : 'text-slate-500'}`}>고정형</button>
-                <button onClick={() => setTableLayout('auto')} className={`py-1.5 rounded-lg text-[11px] font-bold transition-all ${tableLayout === 'auto' ? 'bg-white shadow-sm text-[#3182f6]' : 'text-slate-500'}`}>유연하게</button>
+                <button onClick={() => setTableLayout('fixed')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${tableLayout === 'fixed' ? 'bg-white shadow-sm text-[#3182f6]' : 'text-slate-500'}`}>고정형</button>
+                <button onClick={() => setTableLayout('auto')} className={`py-1.5 rounded-lg text-xs font-bold transition-all ${tableLayout === 'auto' ? 'bg-white shadow-sm text-[#3182f6]' : 'text-slate-500'}`}>유연하게</button>
               </div>
             </div>
 
             <div>
               <div className="flex justify-between mb-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">표 내부 글자</label>
-                <span className="text-[#3182f6] font-bold text-[10px]">{tableFontSize}px</span>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">표 내부 글자</label>
+                <span className="text-[#3182f6] font-bold text-xs">{tableFontSize}px</span>
               </div>
               <input type="range" min="10" max="20" value={tableFontSize} onChange={(e) => setTableFontSize(parseInt(e.target.value))} className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-[#3182f6]" />
             </div>
 
             <div className={`flex items-center justify-between p-3 rounded-xl ${isDarkMode ? 'bg-slate-700' : 'bg-white border border-slate-200'}`}>
-              <span className="text-[11px] font-bold text-slate-500">첫 열 줄바꿈 방지</span>
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-300">첫 열 줄바꿈 방지</span>
               <button onClick={() => setFirstColNowrap(!firstColNowrap)} className={`w-10 h-5 rounded-full transition-all relative ${firstColNowrap ? 'bg-[#3182f6]' : 'bg-slate-300'}`}>
                 <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${firstColNowrap ? 'left-6' : 'left-1'}`} />
               </button>
@@ -222,31 +225,39 @@ window.print();
         {/* Action Bottom */}
         <div className="mt-auto pt-6 border-t border-slate-100 dark:border-slate-700 space-y-3">
           <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => setIsEditMode(!isEditMode)} className={`py-3 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${isEditMode ? 'bg-[#3182f6] text-white' : isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-white border border-slate-200 text-slate-600'}`}>
+            <button onClick={() => setIsEditMode(!isEditMode)} className={`py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${isEditMode ? 'bg-[#3182f6] text-white' : isDarkMode ? 'bg-slate-700 text-slate-300' : 'bg-white border border-slate-200 text-slate-600'}`}>
               {isEditMode ? <Eye className="w-4 h-4"/> : <Edit3 className="w-4 h-4"/>}
               {isEditMode ? '미리보기' : '편집 모드'}
             </button>
-            <button onClick={() => setIsDarkMode(!isDarkMode)} className={`py-3 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all ${isDarkMode ? 'bg-slate-700 text-yellow-400' : 'bg-[#f2f4f6] text-[#4e5968]'}`}>
+            <button onClick={() => setIsDarkMode(!isDarkMode)} className={`py-3 rounded-2xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${isDarkMode ? 'bg-slate-700 text-yellow-400' : 'bg-[#f2f4f6] text-[#4e5968]'}`}>
               {isDarkMode ? <Sun className="w-4 h-4"/> : <Moon className="w-4 h-4"/>}
               테마
             </button>
           </div>
-          <button onClick={handlePrint} disabled={status !== "ready"} className="w-full py-4 bg-[#3182f6] text-white rounded-[20px] font-bold shadow-xl shadow-blue-500/10 hover:bg-[#1b64da] transition-all flex items-center justify-center gap-2 active:scale-95">
-            {status === "loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+          <button onClick={handlePrint} disabled={status !== "ready"} className="w-full py-4 bg-[#3182f6] text-white rounded-[20px] text-sm font-bold shadow-xl shadow-blue-500/10 hover:bg-[#1b64da] transition-all flex items-center justify-center gap-2 active:scale-95">
+            {status === "loading" ? <Loader2 className="w-5 h-5 animate-spin" /> : <Printer className="w-5 h-5" />}
             인쇄 및 PDF 저장
           </button>
         </div>
       </aside>
 
       {/* Main Container */}
-      <main className={`flex-1 flex flex-col lg:flex-row transition-all duration-500 ease-in-out ${isSidebarOpen ? 'ml-80' : 'ml-0'} print:m-0 print:p-0 print:block`}>
+      <main className={`flex-1 flex flex-col lg:flex-row transition-all duration-500 ease-in-out ${isSidebarOpen ? 'ml-72' : 'ml-0'} print:m-0 print:p-0 print:block`}>
         
         {/* Editor Area */}
         {isEditMode && (
           <div className="flex-1 h-screen p-8 bg-white dark:bg-[#191f28] border-r border-slate-100 dark:border-slate-800 flex flex-col print:hidden">
-            <div className="flex items-center gap-2 mb-4 text-slate-400">
-              <Edit3 className="w-4 h-4" />
-              <span className="text-xs font-bold uppercase tracking-widest">문서 편집기</span>
+            <div className="flex items-center justify-between mb-4 text-slate-400">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5" />
+                <span className="text-sm font-bold uppercase tracking-widest">문서 편집기</span>
+              </div>
+              <button 
+                onClick={() => setMarkdown(prev => prev + '\n\n[[페이지 나누기]]\n')}
+                className={`text-xs font-bold px-3 py-2 rounded-lg transition-colors flex items-center gap-1 ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-300' : 'bg-[#f2f4f6] hover:bg-[#e5e8eb] text-slate-600'}`}
+              >
+                ✂️ 페이지 나누기 삽입
+              </button>
             </div>
             <textarea 
               value={markdown}
@@ -258,7 +269,7 @@ window.print();
         )}
 
         {/* Preview Area */}
-        <div className={`flex-1 p-12 overflow-auto flex justify-center bg-transparent print:m-0 print:p-0 print:block ${isEditMode ? 'max-h-screen' : ''}`}>
+        <div className={`flex-1 p-12 overflow-auto flex justify-center items-start bg-transparent print:m-0 print:p-0 print:block ${isEditMode ? 'max-h-screen' : ''}`}>
           <style>
             {`
               @media print {
@@ -284,9 +295,38 @@ window.print();
                 .prose .callout-success { background-color: #f4fce3 !important; }
                 .prose code { background-color: #f2f4f6 !important; }
                 .prose pre { background-color: #191f28 !important; color: white !important; }
+                /* 페이지 나누기 인쇄 스타일 */
+                .prose .pagebreak {
+                  break-after: page;
+                  page-break-after: always;
+                  border: none !important;
+                  margin: 0 !important;
+                }
+                .prose .pagebreak span { display: none !important; }
               }
               
               .prose { max-width: 100% !important; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; transition: color 0.3s ease; }
+
+              /* 미리보기용 페이지 나누기 점선 스타일 */
+              .prose .pagebreak {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                margin: 3em 0;
+                border-top: 2px dashed ${isDarkMode ? '#334155' : '#cbd5e1'};
+                position: relative;
+              }
+              .prose .pagebreak span {
+                position: absolute;
+                top: -12px;
+                padding: 0 16px;
+                background-color: ${isDarkMode ? '#191f28' : '#ffffff'};
+                color: ${isDarkMode ? '#94a3b8' : '#94a3b8'};
+                font-size: 0.85em;
+                font-weight: 700;
+              }
+
               .prose h1 { font-size: 2.5em; font-weight: 800; margin-bottom: 0.8em; border-bottom: 2px solid ${isDarkMode ? '#334155' : '#f2f4f6'}; padding-bottom: 0.4em; color: ${isDarkMode ? '#ffffff' : '#191f28'}; }
               .prose h2 { font-size: 1.8em; font-weight: 700; margin-top: 1.5em; margin-bottom: 0.6em; color: ${isDarkMode ? '#f8fafc' : '#191f28'}; }
               .prose h3 { font-size: 1.4em; font-weight: 700; margin-top: 1.2em; margin-bottom: 0.4em; color: ${isDarkMode ? '#f1f5f9' : '#333d4b'}; }
