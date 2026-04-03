@@ -5,8 +5,6 @@ import {
   Info, Settings2, Table2, Edit3, Eye, AlertCircle, CheckCircle2, Lightbulb, ArrowUp,
   HelpCircle, X, Plus, Minus, Download
 } from 'lucide-react';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
 import { marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import Prism from 'prismjs';
@@ -76,9 +74,6 @@ window.print();
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [exportProgress, setExportProgress] = useState(0);
-  const [status, setStatus] = useState("ready"); // npm으로 설치된 라이브러리 사용하므로 기본값을 ready로 설정
   const fileInputRef = useRef(null);
 
 
@@ -170,38 +165,36 @@ window.print();
 
   // 마크다운 변환 시 콜아웃 클래스 주입 로직
   useEffect(() => {
-    if (status === "ready") {
-      try {
-        let content = marked.parse(markdown);
+    try {
+      let content = marked.parse(markdown);
 
+      // [!TYPE] 문법 파싱 로직 (GitHub/Obsidian 공용 지원)
+      content = content.replace(/<blockquote>\s*<p>\[!(\w+)\]/gi, (match, type) => {
+        const lowerType = type.toLowerCase();
+        return `<blockquote class="callout-${lowerType}">`;
+      });
 
-        // [!TYPE] 문법 파싱 로직 (GitHub/Obsidian 공용 지원)
-        content = content.replace(/<blockquote>\s*<p>\[!(\w+)\]/gi, (match, type) => {
-          const lowerType = type.toLowerCase();
-          return `<blockquote class="callout-${lowerType}">`;
-        });
+      // 기존 한국어 스타일 호환성 유지
+      content = content.replace(/<blockquote>\s*<p><strong>안내<\/strong>/g, '<blockquote class="callout-info"><p><strong>안내</strong>');
+      content = content.replace(/<blockquote>\s*<p><strong>주의<\/strong>/g, '<blockquote class="callout-warning"><p><strong>주의</strong>');
+      content = content.replace(/<blockquote>\s*<p><strong>경고<\/strong>/g, '<blockquote class="callout-danger"><p><strong>경고</strong>');
+      content = content.replace(/<blockquote>\s*<p><strong>팁<\/strong>/g, '<blockquote class="callout-success"><p><strong>팁</strong>');
 
-        // 기존 한국어 스타일 호환성 유지
-        content = content.replace(/<blockquote>\s*<p><strong>안내<\/strong>/g, '<blockquote class="callout-info"><p><strong>안내</strong>');
-        content = content.replace(/<blockquote>\s*<p><strong>주의<\/strong>/g, '<blockquote class="callout-warning"><p><strong>주의</strong>');
-        content = content.replace(/<blockquote>\s*<p><strong>경고<\/strong>/g, '<blockquote class="callout-danger"><p><strong>경고</strong>');
-        content = content.replace(/<blockquote>\s*<p><strong>팁<\/strong>/g, '<blockquote class="callout-success"><p><strong>팁</strong>');
-
-        if (isPageMode) {
-          // 페이지별 모드: 페이지 나누기 텍스트를 기준으로 HTML을 배열로 나눔
-          const pages = content.split(/<p>\s*\[\[페이지 나누기\]\]\s*<\/p>\n?/g);
-          setHtmlPages(pages);
-        } else {
-          // 연속형 모드: [[페이지 나누기]] 텍스트를 제거하고 하나의 페이지로 처리
-          const singleContent = content.replace(/<p>\s*\[\[페이지 나누기\]\]\s*<\/p>\n?/g, '');
-          setHtmlPages([singleContent]);
-        }
-
-      } catch (err) {
-        console.error("Parsing error:", err);
+      if (isPageMode) {
+        // 페이지별 모드: 페이지 나누기 텍스트를 기준으로 HTML을 배열로 나눔
+        const pages = content.split(/<p>\s*\[\[페이지 나누기\]\]\s*<\/p>\n?/g);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setHtmlPages(pages);
+      } else {
+        // 연속형 모드: [[페이지 나누기]] 텍스트를 제거하고 하나의 페이지로 처리
+        const singleContent = content.replace(/<p>\s*\[\[페이지 나누기\]\]\s*<\/p>\n?/g, '');
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setHtmlPages([singleContent]);
       }
+    } catch (err) {
+      console.error("Parsing error:", err);
     }
-  }, [markdown, status, isPageMode]);
+  }, [markdown, isPageMode]);
 
 
   const handleFileUpload = (e) => {
@@ -237,129 +230,16 @@ window.print();
     document.title = getDocumentTitle(markdown);
   }, [markdown]);
 
-  // 한 페이지짜리 긴 PDF로 내보내기 (html2canvas + jsPDF)
-  const handleExportSinglePagePDF = async () => {
-    if (isExporting) return;
-
-    setIsExporting(true);
-    setExportProgress(10);
-
-    try {
-      const element = document.getElementById('capture-area');
-      if (!element) throw new Error("Capture area not found");
-
-      // 1. 캡처를 위해 잠시 스타일 조정 (그림자 제거, 테두리 조정 등)
-      // html2canvas 옵션 설정
-      const canvas = await html2canvas(element, {
-        scale: 2, // 고해상도
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
-        onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.getElementById('capture-area');
-          if (clonedElement) {
-            // 캡처용 클론 엘리먼트 스타일 보정
-            clonedElement.style.zoom = '1';
-            clonedElement.style.transform = 'none';
-            // 모든 페이지의 그림자와 마진 제거하여 하나로 잇기
-            const pages = clonedElement.querySelectorAll('.paper-preview');
-            pages.forEach((page, i) => {
-              page.style.boxShadow = 'none';
-              page.style.margin = '0';
-              page.style.border = 'none';
-              if (i < pages.length - 1) {
-                page.style.borderBottom = 'none';
-              }
-            });
-
-            // 캡처 시 인라인 코드 및 체크박스 정렬 보정 (html2canvas 렌더링 오류 방지)
-            const inlineElements = clonedElement.querySelectorAll('.prose :not(pre) > code, .prose input[type="checkbox"]');
-            inlineElements.forEach(el => {
-              if (el.tagName.toLowerCase() === 'code') {
-                el.style.display = 'inline';
-                el.style.verticalAlign = 'baseline';
-                el.style.wordBreak = 'break-word';
-                el.style.whiteSpace = 'pre-wrap';
-              } else if (el.tagName.toLowerCase() === 'input') {
-                const isChecked = el.checked;
-                const fakeBox = clonedDoc.createElement('span');
-                fakeBox.style.display = 'inline-block';
-                fakeBox.style.width = '1.1em';
-                fakeBox.style.height = '1.1em';
-                fakeBox.style.borderRadius = '3px';
-                fakeBox.style.verticalAlign = '-0.15em'; // middle 대신 baseline 대비 상대 수치로 변경하여 주변 텍스트 줄높이 파괴 방지
-                fakeBox.style.marginRight = '0.5em';
-                fakeBox.style.marginLeft = '-1.5em';
-
-                if (isChecked) {
-                  fakeBox.style.backgroundColor = '#3182f6';
-                  fakeBox.style.border = 'none';
-                  fakeBox.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="width: 100%; height: 100%; padding: 2px; box-sizing: border-box;"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-                } else {
-                  fakeBox.style.backgroundColor = 'white';
-                  fakeBox.style.border = '1px solid #cbd5e1';
-                }
-
-                if (el.parentNode) {
-                  el.parentNode.replaceChild(fakeBox, el);
-                }
-              }
-            });
-          }
-        }
-      });
-
-      setExportProgress(60);
-
-      const imgData = canvas.toDataURL('image/png');
-
-      // PDF 생성
-      const imgWidth = 210; // A4 가로 (mm)
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      // 이미지 높이에 맞춘 커스텀 사이즈 PDF 생성
-      const pdf = new jsPDF({
-        orientation: 'p',
-        unit: 'mm',
-        format: [imgWidth, imgHeight]
-      });
-
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
-
-      setExportProgress(90);
-      const fileName = getDocumentTitle(markdown);
-      pdf.save(`${fileName}.pdf`);
-
-    } catch (error) {
-      console.error("PDF Export Error:", error);
-      alert("PDF 생성 중 오류가 발생했습니다.");
-    } finally {
-      setIsExporting(false);
-      setExportProgress(0);
-    }
-  };
-
-  // 지능형 PDF 저장 함수
-  const handlePDFSave = () => {
-    if (isPageMode) {
-      // 페이지 나누기가 설정되어 있으면 표준 인쇄 다이얼로그 호출 (나누기 적용)
-      handlePrint();
-    } else {
-      // 페이지 나누기가 없으면 고해상도 롱 PDF로 저장
-      handleExportSinglePagePDF();
-    }
-  };
 
   const handlePrint = () => {
     // Canvas 환경에서는 직접 호출이 제한될 수 있으므로 사용자 가이드 제공
     try {
       window.print();
-    } catch (e) {
-      console.error("Print feature is restricted in this environment.");
+    } catch (error) {
+      console.error("Print feature is restricted in this environment.", error);
     }
   };
+
 
   const getPaperStyle = () => {
     return {
@@ -382,8 +262,8 @@ window.print();
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
         className={`fixed top-6 right-8 z-[100] p-3 rounded-2xl shadow-xl transition-all print:hidden ${isSidebarOpen
-            ? 'bg-white border border-slate-200 text-slate-500 hover:text-[#3182f6] hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'
-            : 'bg-[#3182f6] text-white hover:bg-[#1b64da] shadow-blue-500/20'
+          ? 'bg-white border border-slate-200 text-slate-500 hover:text-[#3182f6] hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'
+          : 'bg-[#3182f6] text-white hover:bg-[#1b64da] shadow-blue-500/20'
           }`}
       >
         <LayoutPanelLeft className="w-5 h-5" />
@@ -429,7 +309,7 @@ window.print();
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest">페이지 여백</label>
                 <span className="text-[#3182f6] font-bold text-xs">{padding}mm</span>
               </div>
-              <input type="range" min="5" max="60" value={padding} onChange={(e) => setPadding(parseInt(e.target.value))} className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-[#3182f6]" />
+              <input type="range" min="4" max="60" value={padding} onChange={(e) => setPadding(parseInt(e.target.value))} className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-[#3182f6]" />
             </div>
 
             <div>
@@ -515,30 +395,22 @@ window.print();
           </div>
           <div className="grid grid-cols-1 gap-2 mt-4">
             <button
-              onClick={handlePDFSave}
-              disabled={isExporting}
-              className={`w-full py-4 rounded-[20px] text-sm font-bold shadow-xl transition-all flex items-center justify-center gap-2 active:scale-95 ${isExporting ? 'bg-slate-400 cursor-not-allowed text-white' : 'bg-[#3182f6] text-white hover:bg-[#1b64da] shadow-blue-500/10'}`}
-            >
-              {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-              PDF 저장
-            </button>
-            <button
               onClick={handlePrint}
-              disabled={status !== "ready" || isExporting}
-              className={`w-full py-3 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-[20px] text-sm font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50`}
+              className={`w-full py-4 bg-[#3182f6] text-white rounded-[20px] text-sm font-bold shadow-xl shadow-blue-500/10 hover:bg-[#1b64da] transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50`}
             >
-              <Printer className="w-4 h-4" />
-              인쇄
+              <FileText className="w-5 h-5" />
+              PDF 저장 및 인쇄
             </button>
           </div>
         </div>
+
       </aside>
 
 
 
 
       {/* Main Container */}
-      <main className={`flex-1 flex flex-col lg:flex-row transition-all duration-500 ease-in-out ${isSidebarOpen ? 'ml-80' : 'ml-0'} print:m-0 print:p-0 print:block`}>
+      <main className={`flex-1 flex flex-col lg:flex-row transition-all duration-500 ease-in-out ${isSidebarOpen ? 'lg:ml-80' : 'ml-0'} print:m-0 print:p-0 print:block`}>
 
         {/* Editor Area */}
         {isEditMode && (
@@ -576,12 +448,24 @@ window.print();
             {`
               @media print {
                 @page { 
-                  size: ${isPageMode ? 'A4 portrait' : 'auto'}; 
-                  margin: ${isPageMode ? padding + 'mm' : '0'}; 
+                  size: A4 portrait !important; 
+                  margin: 6mm !important; 
                 }
 
-                html, body, #root { background: white !important; -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
+                * {
+                  -webkit-print-color-adjust: exact !important;
+                  color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                }
+
+                html, body, #root { 
+                  background: white !important; 
+                  margin: 0 !important;
+                  padding: 0 !important;
+                }
+
                 .paper-preview { 
+                  display: block !important;
                   box-shadow: none !important; 
                   margin: 0 !important;
                   padding: 0 !important;
@@ -594,20 +478,29 @@ window.print();
                   break-after: ${isPageMode ? 'page' : 'auto'};
                   page-break-after: ${isPageMode ? 'always' : 'auto'};
                   margin-bottom: ${isPageMode ? '' : '0 !important'};
-                  /* 연속형 모드에서는 페이지 간 이음새가 없도록 패딩과 마진을 인위적으로 조정 */
-                  padding-top: ${isPageMode ? '' : padding + 'mm !important'};
-                  padding-bottom: ${isPageMode ? '' : padding + 'mm !important'};
-                  padding-left: ${isPageMode ? '' : padding + 'mm !important'};
-                  padding-right: ${isPageMode ? '' : padding + 'mm !important'};
+                  
+                  /* 사용자 설정 패딩을 인쇄 시에도 적용하되, @page 마진(4mm)과 조화롭게 설정 */
+                  box-sizing: border-box !important;
+                  padding-top: ${isPageMode ? '0' : padding + 'mm !important'};
+                  padding-bottom: ${isPageMode ? '0' : padding + 'mm !important'};
+                  padding-left: ${isPageMode ? '0' : padding + 'mm !important'};
+                  padding-right: ${isPageMode ? '0' : padding + 'mm !important'};
                 }
 
                 .paper-preview:last-child {
                   break-after: auto;
                   page-break-after: auto;
                 }
+
                 aside, button, textarea, .print-hidden { display: none !important; }
                 main { margin: 0 !important; padding: 0 !important; display: block !important; width: 100% !important; }
-                .prose { color: #191f28 !important; }
+                
+                .prose { 
+                  max-width: 100% !important;
+                  color: #191f28 !important; 
+                  box-sizing: border-box !important;
+                }
+                
                 .prose h1, .prose h2, .prose h3, .prose p, .prose th, .prose td { color: #191f28 !important; }
                 .prose blockquote { background-color: #f2f4f6 !important; border: none !important; }
                 .prose .callout-warning { background-color: #fff9db !important; }
@@ -620,43 +513,51 @@ window.print();
                   page-break-inside: auto;
                   break-inside: auto;
                 }
-                /* 페이지별 모드에서는 덩어리가 잘리는 것을 방지, 연속형에서는 흐름 중시 */
-                .prose blockquote, .prose table, .prose pre {
+
+                /* 인쇄 시 테이블이 잘리지 않도록 추가 보정 */
+                .prose table {
+                  width: 100% !important;
+                  table-layout: fixed !important; /* 고정형으로 강제하여 잘림 방지 */
+                  page-break-inside: ${isPageMode ? 'avoid' : 'auto'};
+                  break-inside: ${isPageMode ? 'avoid' : 'auto'};
+                  word-wrap: break-word !important;
+                }
+
+                .prose blockquote, .prose pre {
                   page-break-inside: ${isPageMode ? 'avoid' : 'auto'};
                   break-inside: ${isPageMode ? 'avoid' : 'auto'};
                 }
               }
 
-
-
-
-              
               .prose { max-width: 100% !important; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; transition: color 0.3s ease; }
 
               .prose h1 { font-size: 2.5em; font-weight: 800; margin-bottom: 0.8em; border-bottom: 2px solid ${isDarkMode ? '#334155' : '#f2f4f6'}; padding-bottom: 0.4em; color: ${isDarkMode ? '#ffffff' : '#191f28'}; }
               .prose h2 { font-size: 1.8em; font-weight: 700; margin-top: 1.5em; margin-bottom: 0.6em; color: ${isDarkMode ? '#f8fafc' : '#191f28'}; }
               .prose h3 { font-size: 1.4em; font-weight: 700; margin-top: 1.2em; margin-bottom: 0.4em; color: ${isDarkMode ? '#f1f5f9' : '#333d4b'}; }
-              .prose p { margin-bottom: 1.2em; line-height: 1.7; color: ${isDarkMode ? '#94a3b8' : '#4e5968'}; }
+              .prose p { margin-bottom: 1.2em; line-height: 1.6; color: ${isDarkMode ? '#94a3b8' : '#4e5968'}; }
 
               /* 리스트(목록) 스타일 및 체크박스 정렬 */
               .prose ul, .prose ol { margin-top: 0.5em; margin-bottom: 1.5em; padding-left: 1.5em; }
-              .prose li { margin-bottom: 0.8em; line-height: 1.7; color: ${isDarkMode ? '#94a3b8' : '#4e5968'}; }
+              .prose li { margin-bottom: 0.8em; line-height: 1.6; color: ${isDarkMode ? '#94a3b8' : '#4e5968'}; }
               .prose ul { list-style-type: disc; }
               .prose ol { list-style-type: decimal; }
               .prose li > ul, .prose li > ol { margin-top: 0.5em; margin-bottom: 0; }
               .prose input[type="checkbox"] { 
-                  width: 1.2em; 
-                  height: 1.2em; 
-                  margin: 0;                /* 기존 마진 제거 */
-                  flex-shrink: 0;           /* 크기 고정 */
-                  accent-color: #3182f6; 
-                  cursor: pointer;
+                width: 1em; 
+                height: 1em; 
+                margin: 0;
+                flex-shrink: 0;
+                vertical-align: baseline;   /* text-bottom 대신 baseline 및 top 보정 활용 */
+                position: relative;
+                top: -0.05em;
+                accent-color: #3182f6; 
+                cursor: pointer;
               }
               .prose li:has(input[type="checkbox"]) { 
-                  list-style-type: none; 
-                  display: flex;            /* 플렉스 박스로 변경 */
-                  align-items: center;      /* 수직 중앙 정렬 */
-                  gap: 8px;                 /* 간격 조절 */
+                list-style-type: none; 
+                display: flex;
+                align-items: center;    /* baseline으로 텍스트와 동일선 정렬 */
+                gap: 6px;
               }
 
               .prose table { 
@@ -671,19 +572,15 @@ window.print();
                 font-size: ${tableFontSize}px !important;
               }
               .prose th, .prose td { 
-                  padding: 14px 18px; /* 위아래 패딩을 동일하게 맞춤 */
+                  padding: 14px 18px; 
                   text-align: left; 
-                  vertical-align: middle; /* 이게 핵심 */
-                  line-height: 1.6; /* 텍스트 높이를 명확히 지정 */
+                  vertical-align: top;    /* middle -> top 전환 (html2canvas 기준선 쳐짐 방지) */
+                  line-height: 1.5; 
                   font-weight: 500;
                   border-bottom: 1px solid ${isDarkMode ? '#334155' : '#f2f4f6'};
                   word-break: break-all;
               }
-              .prose th:has(input[type="checkbox"]), .prose td:has(input[type="checkbox"]) {
-                  display: flex;
-                  align-items: center;
-                  gap: 8px;
-              }
+              /* 테이블 셀은 display: table-cell 유지 (flex로 바꾸면 테이블 레이아웃이 깨짐) */
               .prose th { background: ${isDarkMode ? '#1e293b' : '#fafafa'}; font-weight: 700; color: ${isDarkMode ? '#cbd5e1' : '#4e5968'}; border-bottom: 2px solid ${isDarkMode ? '#334155' : '#f2f4f6'}; }
               .prose tr td:first-child {
                 font-weight: 700;
@@ -746,16 +643,15 @@ window.print();
               .prose blockquote strong { color: inherit; display: inline; margin-bottom: 0; }
 
               .prose :not(pre) > code { 
-                  background: ${isDarkMode ? '#1e293b' : '#f2f4f6'}; 
-                  padding: 2px 5px;         /* 상하 패딩을 동일하게 */
-                  border-radius: 6px; 
-                  font-family: monospace; 
-                  font-size: 0.9em; 
-                  color: #3182f6; 
-                  font-weight: 600; 
-                  vertical-align: middle;   /* 텍스트와 라인을 맞춤 */
-                  position: relative;
-                  top: -1px;                /* 시각적으로 미세하게 위로 보정 */
+                background: ${isDarkMode ? '#1e293b' : '#f2f4f6'}; 
+                padding: 2px 6px;
+                border-radius: 6px; 
+                font-family: monospace; 
+                font-size: 0.9em; 
+                color: #3182f6; 
+                font-weight: 600; 
+                vertical-align: baseline;   /* baseline: html2canvas에서 텍스트가 쳐지는 현상 방지 */
+                word-break: break-word;
               }
               .prose pre { 
                 background: #191f28 !important; 
@@ -823,11 +719,8 @@ window.print();
               </button>
             </div>
 
-            {/* PDF & Print Actions */}
-            <div className={`flex flex-col items-center p-1.5 rounded-full shadow-xl backdrop-blur-md ${isDarkMode ? 'bg-slate-800/90 border border-slate-700' : 'bg-white/90 border border-slate-200'}`}>
-              <button onClick={handlePDFSave} className={`p-3 rounded-full transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-100 text-[#3182f6]'}`} title="PDF 저장">
-                <Download className="w-5 h-5" />
-              </button>
+            {/* Print Action */}
+            <div className={`p-1.5 rounded-full shadow-xl backdrop-blur-md ${isDarkMode ? 'bg-slate-800/90 border border-slate-700' : 'bg-white/90 border border-slate-200'}`}>
               <button onClick={() => handlePrint()} className={`p-3 rounded-full transition-all hover:scale-105 active:scale-95 ${isDarkMode ? 'hover:bg-slate-700 text-slate-300' : 'hover:bg-slate-100 text-[#3182f6]'}`} title="인쇄">
                 <Printer className="w-5 h-5" />
               </button>
@@ -873,7 +766,7 @@ window.print();
                 </h3>
                 <div className={`p-4 rounded-[16px] leading-relaxed text-sm ${isDarkMode ? 'bg-slate-800/80 border border-slate-700' : 'bg-[#f2f4f6]'}`}>
                   <p>편집기 우측 상단의 <strong className="text-[#3182f6] px-1 bg-white dark:bg-slate-700 rounded shadow-sm">✂️ 페이지 나누기 삽입</strong> 버튼을 누르면 커서 위치에 <code className="bg-slate-200 dark:bg-[#0f172a] px-1.5 py-0.5 rounded text-sm text-[#3182f6] dark:text-blue-400 font-mono">[[페이지 나누기]]</code> 텍스트가 들어갑니다.</p>
-                  <p className="mt-3 text-slate-500 dark:text-slate-400 pt-3 border-t border-slate-200 dark:border-slate-700">이 텍스트를 기준으로 인쇄 및 PDF 저장 시 <strong>새로운 페이지</strong>로 나뉘어 깔끔하게 출력됩니다.</p>
+                  <p className="mt-3 text-slate-500 dark:text-slate-400 pt-3 border-t border-slate-200 dark:border-slate-700">이 텍스트를 기준으로 <strong>인쇄</strong> 시 새로운 페이지로 나뉘어 깔끔하게 출력됩니다.</p>
                 </div>
               </section>
 
@@ -928,16 +821,6 @@ window.print();
               </button>
             </div>
           </div>
-        </div>
-      )}
-      {/* Export Overlay */}
-      {isExporting && (
-        <div className="fixed inset-0 z-[200] bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
-          <Loader2 className="w-12 h-12 text-[#3182f6] animate-spin mb-4" />
-          <p className="text-sm font-bold text-slate-600 dark:text-slate-300 animate-pulse">
-            진행중...
-          </p>
-          <p className="text-xs text-slate-400 mt-2">잠시만 기다려 주세요.</p>
         </div>
       )}
     </div>
